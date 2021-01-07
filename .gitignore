@@ -37,3 +37,11 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+#skip these files
+*.html
+*.pdf
+doc
+exp
+test
+data
