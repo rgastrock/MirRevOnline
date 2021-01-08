@@ -334,13 +334,13 @@ getMoveThroughColourScheme <- function(moves = c('0','1')){
   for (move in moves){
     colourscheme <- list()
     
-    colourscheme[['0']] <- list('S'='#ff8200ff', # pure orange
+    colourscheme[['1']] <- list('S'='#ff8200ff', # pure orange
                                          'T'='#ff82002f')    #2f gives a lighter shade of the color
     
     #colourscheme[['30']] <- list('S'='#e51636ff', #vivid/york red
      #                            'T'='#e516362f')
     
-    colourscheme[['1']] <- list('S'='#c400c4ff', #strong magenta
+    colourscheme[['0']] <- list('S'='#c400c4ff', #strong magenta
                                          'T'='#c400c42f')
     
     #colourscheme[['60']] <-   list('S'='#005de4ff', #pure blue

@@ -1,0 +1,250 @@
+---
+title: "Online Mirror Reversal"
+author: "Raphael Gastrock"
+output: html_document
+---
+
+# Overview
+
+This document discusses figures and statistics for the online mirror reversal experiment. Participants reached to two targets (30 and 60 degrees in polar coordinates) using their computer mouse or trackpad. There were two groups, an instructed and non-instructed group. The instructed group were told about the nature of the perturbation (i.e. cursor is in the opposite direction of the hand/mouse, flipped along the y-axis), while the non-instructed group were simply told that the cursor would be moving differently and they needed to compensate for it.
+
+# Set up the R enviornment
+
+We have written code that pre-processes the data, plots figures, and runs statistical tests. Import the sources below:
+
+```{r message=FALSE, warning=FALSE}
+source('ana/shared.R')
+source('ana/su&fa2020online.R')
+```
+
+# Data sets
+
+There are currently two data sets (currently analyzing up to September 2020). Note that these experiments are ongoing, so the data sets should be updated.
+1) Summer - this includes the instructed participants
+2) Fall - this includes the non-instructed participants
+
+## Cleaning the data
+
+Some participants had to be removed due to different issues, including:
+1) computer crashing/technical difficulties with the experiment
+2) data is missing/ not saved appropriately
+3) did not use a mouse or trackpad
+4) cleaned baseline (aligned) reaches
+
+For baseline reaches, some participants were reaching in different directions, even though the task required that they reach towards targets in the upper-right quadrant of the workspace. Here, we only included trials that fell within this quadrant for the aligned session. If a participant was left with less than half the data for each target location (i.e. less than 5 trials), they were removed from further analyses.
+
+This led to N = 109 for the instructed group, and N = 106 for the non-instructed group.
+
+## Experiment Schedule
+
+The experiment had 20 trials of aligned cursor feedback, followed by 90 mirror reversed trials, then 20 trials again aligned feedback (washout). Although both data sets follow the schedule of aligned - mirror reversal - washout blocks, the data sets were collected at different points during the development of the experiment. In the Summer/instructed data set, all participants started with the 30 degree target and following trials alternated with the other target location. In other words, all odd trials will contain the 30 degree target location, and even trials will contain the 60 degree target location. In the Fall/non-instructed data set, we implemented a randomization and counterbalancing for the target location presented. Therefore, around half of participants started with the 30 degree target, while the other half started with the 60 degree target. The target location presented for the following trials was randomized, but each participant made an equal amount of reaches to each target.
+
+# Learning rates and aftereffects
+
+The plots below show angular reach deviations across all experimental blocks for each group, according to target location. Solid lines are means and shaded regions are 95% confidence intervals. Reaching directly towards the target would correspond to zero degrees. Perfect compensation for the 30 degree target would be deviating the mouse position by 120 degrees, while the 60 degree target would require a 60 degree deviation.
+
+Non - instructed group:
+
+```{r}
+plotCircularAllTasks(set='fa2020')
+```
+
+Instructed group:
+
+```{r}
+plotCircularAllTasks(set='su2020')
+```
+
+There seems to be a difference between target locations during the aligned session, although this difference is likely due to reach biases in relation to each target location. Regardless, reaches during the aligned session are near the zero degree mark.
+
+Learning progresses quickly for both groups. Participants reach near perfect compensation for the 60 degree target. Reaches for the 30 degree target are deviated, but not quite near perfect compensation. 
+
+No reach aftereffects are observed for either group. Given that de novo learning establishes a new response mapping within the brain, we expect an absence of reach aftereffects, unlike in adaptation, to support the idea that participants switch between response mappings with the mirror reversal task.
+
+Instructions did not seem to provide an advantage for dealing with the mirror reversal. If there was an effect of instructions, we would expect to see reaches for the first trial deviated towards the correct direction. However, the mean of the reaches for the 30 degree target during the first trial in the instructed group are near the zero degree mark.
+
+The non-instructed group shows reaches that are already deviated during the first trial. Hence, we investigate this further.
+
+# Reach distributions and workspace exploration
+
+To get a complete picture of how participants are performing, we can plot the distribution of angular reach deviations of all participants within each group. The plots below will show a circular density distribution, where zero degrees corresponds to target locations, and perfect compensation is marked accordingly, depending on the target location. The plots also show how the distribution of responses changes across the 90 trials of mirror reversed training. Here, I will show distributions for trials 1, 2, and 90.
+
+## Non - instructed group
+
+```{r}
+plotGroupCircFreq(set='fa2020')
+```
+
+For both targets, we see a bimodal distribution in trial 1. We also see a general shift of responses towards the correct reach direction (i.e. highest peak in distribution moves towards perfect compensation location for each target).
+
+### Move throughs or exploration
+
+To investigate why we get a subset of participants already reaching in the correct direction relative to the mirror axis by trial 1, our hypothesis is that participants are making exploratory movements. That is, before the first mirror reversed trial begins, participants had to bring the cursor to the start position at the centre of the screen. However, during this time, the mirror reversal has already been implemented, which could have led to participants knowing which approximate direction they should reach, in order to successfully compelte the upcoming trial. 
+
+These exploratory movements may be measured with what we will call as a move through. A given trial is divided into 3 steps. Step 1 would be bringing the cursor to the start position, step 2 will be the target appearance and reach towards its location, and step 3 would be the return movement to the start position. A participant needs to stay at the start position in order for step 1 to change to step 2. However, a move through would occur when participants do not hold at the start position, thereby making the current trial stay at step 1. In the experiment, an ideal trial will collect two samples at step 1, before switching to step 2. Therefore, participants with trials that have 3 or more samples at step 1 are considered as those that committed a move through. Below are the frequencies of participants with move through for each target location, across the 90 mirror reversed trials.
+
+```{r}
+plotParticipantMoveThrough(set='fa2020')
+```
+
+We see that move throughs are very much persistent on trial 1. 30 out of 54 participants have move throughs in trial 1 for the 30 degree target, and this is 28 out of 52 participants for the 60 degree target. Therefore, we can plot the circular density distributions for trial 1 while separating participants into subgroups of those with or without move throughs (or exploration).
+
+```{r}
+plotTrialOneCheckGroupCircFreq(set='fa2020')
+```
+
+For both target locations, participants that explored the workspace are more likely to have reach deviations in the correct side of the mirror, while the non-explorers reach directly towards the target. Thus, we can plot the learning curves for each target location, while separating participants into these two subgroups.
+
+```{r}
+plotMoveThroughAllTasks(set='fa2020')
+```
+
+The plots show that the already deviated reaches by trial one that was shown earlier was a reflection of how the mean was being pulled away from the zero degree mark by those participants that explored the workspace. Otherwise, participants that did not explore the workspace are reaching directly towards the target during trial one. Regardless, participants learn quickly that they should be reaching in the opposite direction.
+
+### Movement Time
+
+As further evidence for the exploratory behavior, we can also investigate whether there is a relationship between step 1 movement time, and the corresponding angular reach deviation that was produced for that trial. If there is, then it would support the hypothesis that exploratory behavior is linked to knowing where to reach during the trial.
+
+```{r}
+plotGroupRDMT(group='30', set='fa2020')
+```
+
+For the 30 degree target, we find a significant relationship between step 1 movement time and the corresponding reach deviation for that trial.
+
+```{r}
+plotGroupRDMT(group='60', set='fa2020')
+```
+
+For the 60 degree target, we find the same results. Note that one participant (216814) has been removed from this test for having an outlier movement time for this trial.
+
+When we separate participants into the two subgroups of explorers and non-explorers, the relationship is not statistically significant. However, we find a clear distinction in the plots below that explorers have longer step 1 movement times, and have more reach deviations near full compensation.
+
+```{r}
+plotMoveThroughGroupRDMT(group='30', set='fa2020')
+plotMoveThroughGroupRDMT(group='60', set='fa2020')
+```
+
+In addition to these, we can also show movement times during the reach to the target for all trials in the experiment.
+
+```{r}
+plotAllTasksMT(set='fa2020')
+```
+
+We find that movement times are initially longer during the first few trials of the mirror reversal, but eventually get close (but not similar) to baseline levels.
+
+### Path Length
+
+Similar to the movement time analysis, path length is another variable that can support our findings regarding exploratory behavior. Path length is essentially the path/trajectory that participants take from one point to another. For example, shorter path lengths suggest straight and smooth movements to the target.
+
+```{r}
+plotGroupRDPL(group='30', set='fa2020')
+```
+
+For the 30 degree target, we do not find a significant relationship between step 1 path length and the corresponding reach deviation for that trial.
+
+```{r}
+plotGroupRDPL(group='60', set='fa2020')
+```
+
+For the 60 degree target, we find a significant relationship. Note that one participant (216814) has been removed from this test for having an outlier movement time for this trial.
+
+When we separate participants into the two subgroups of explorers and non-explorers, the relationship is not statistically significant. However, we find a clear distinction in the plots below that explorers have longer step 1 path lengths, and have more reach deviations near full compensation.
+
+```{r}
+plotMoveThroughGroupRDPL(group='30', set='fa2020')
+plotMoveThroughGroupRDPL(group='60', set='fa2020')
+```
+
+In addition to these, we can also show path lengths during the reach to the target for all trials in the experiment. Note that path length is scaled to participants' monitor dimensions. That is, the start position to target distance is 40% (or 0.4) of the participant's monitor height. Here, baseline reaches are around this length.
+
+```{r}
+plotAllTasksPathLength(set='fa2020')
+```
+
+We find that path lengths are initially longer during the first few trials of the mirror reversal, but eventually get close to baseline levels.The variability also becomes reduced as mirror reversal training progresses.
+
+## Instructed group
+
+The following analyses just repeat the ones in the previous section for the instructed group.
+
+```{r}
+plotGroupCircFreq(set='su2020')
+```
+
+Both targets show distributed responses for trial 1. We also see a general shift of responses towards the correct reach direction (i.e. highest peak in distribution moves towards perfect compensation location for each target).
+
+### Move throughs or exploration
+
+Below are the frequencies of participants with move through for each target location, across the 90 mirror reversed trials.
+
+```{r}
+plotParticipantMoveThrough(set='su2020')
+```
+
+We see that move throughs are only persistent on trial 1 for the 30 degree target, given that it is always the first trial for this group. 56 out of 109 participants have move throughs in trial 1 for the 30 degree target. Therefore, we can plot the circular density distribution for trial 1 of this target location, while separating participants into subgroups of those with or without move throughs (or exploration).
+
+```{r}
+plotTrialOneCheckGroupCircFreq(group = '30', set='su2020')
+```
+
+Participants that explored the workspace have distributed reach deviations across the workspace, while the non-explorers are more likely to reach directly towards the target. Thus, we can plot the learning curves for each target location, while separating participants into these two subgroups.
+
+```{r}
+plotMoveThroughAllTasksSU()
+```
+
+The plots show a distinction of the reach deviations between the explorers and non-explorers for trial 1. The mean reach deviation for explorers is at perfect compensation, but has a very wide confidence interval. This is likely due to their distributed reach deviations across the workspace. The mean reach deviation for non-explorers are around the expected zero degree mark, but quickly increase by the next trial. 
+
+### Movement Time
+
+We test for a relationship between step 1 movement time, and the corresponding angular reach deviation that was produced for that trial.
+
+```{r}
+plotGroupRDMT(group='30', set='su2020')
+```
+
+For the 30 degree target, we find a significant relationship between step 1 movement time and the corresponding reach deviation for that trial. Note that for this group, it would be unnecessary to analyze the 60 degree target, as it always occurs as the second trial, such that participants have had enough opportunities to explore the workspace by then.
+
+When we separate participants into the two subgroups of explorers and non-explorers, the relationship is not statistically significant. However, we find a clear distinction in the plots below that explorers have longer step 1 movement times, and have more reach deviations near full compensation.
+
+```{r}
+plotMoveThroughGroupRDMT(group='30', set='su2020')
+```
+
+In addition to these, we can also show movement times during the reach to the target for all trials in the experiment.
+
+```{r}
+plotAllTasksMT(set='su2020')
+```
+
+We find that movement times are initially longer during the first few trials of the mirror reversal, but eventually get close (but not similar) to baseline levels.
+
+### Path Length
+
+We test for a relationship between step 1 path length, and the corresponding angular reach deviation that was produced for that trial.
+
+```{r}
+plotGroupRDPL(group='30', set='su2020')
+```
+
+For the 30 degree target, we do not find a significant relationship between step 1 path length and the corresponding reach deviation for that trial.
+
+When we separate participants into the two subgroups of explorers and non-explorers, we find similar results as those in movement time.
+
+```{r}
+plotMoveThroughGroupRDPL(group='30', set='su2020')
+```
+
+In addition to these, we can also show path lengths during the reach to the target for all trials in the experiment.
+
+```{r}
+plotAllTasksPathLength(set='su2020')
+```
+
+We find that path lengths are initially longer during the first few trials of the mirror reversal, but eventually get close to baseline levels.
+
+# Conclusions
+
+It is viable to investigate the mirror reversal task on an online platform. However, participants exploring the workspace speeds up learning of the perturbation. Regardless, there is still behavioral evidence of learning, as seen with movement times and path lengths decreasing and the distributions of reach deviations shifting towards the correct movement direction.
+
+There seems to be no effect of instructions. More elaborate instructions, such as giving a strategy to counter for the perturbation, and/or showing animations of the expected reach, are probably needed to observe an effect. Merely instructing about the nature of the perturbation is not enough to provide an advantage in learning.

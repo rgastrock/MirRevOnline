@@ -176,7 +176,7 @@ plotReachTrajectories <- function(group,set){
   for(datafilenum in c(1:length(datafilenames))){
     datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
 
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     try(df <- read.csv(datafilename, stringsAsFactors = F), silent = TRUE)
     
     #plot
@@ -263,7 +263,7 @@ plotTestOneFileStepOne <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step 1, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -333,7 +333,7 @@ plotAlOneFileStepOne <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Aligned Step 1, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -402,7 +402,7 @@ plotMirOneFileStepOne <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step1, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -477,7 +477,7 @@ plotTestOneFileStepTwo <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step 2, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -550,7 +550,7 @@ plotAlOneFileStepTwo <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Aligned, Step 2, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -623,7 +623,7 @@ plotMirOneFileStepTwo <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step 2, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -697,7 +697,7 @@ plotTestOneFileStepThree <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step 3, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -770,7 +770,7 @@ plotAlOneFileStepThree <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Aligned, Step 3, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -843,7 +843,7 @@ plotMirOneFileStepThree <- function() {
     plot(NA,NA,xlim=c(-1.2,1.2),ylim=c(-1.2,1.2), xlab = 'X coords', ylab = 'Y coords', main = sprintf('Mir Step 3, Trial %d', triali))
     points(c(0,.4*(cos((30/180)*pi))),c(0,.4*(sin((30/180)*pi))),col='black')
     points(c(0,.4*(cos((60/180)*pi))),c(0,.4*(sin((60/180)*pi))),col='black')
-    cat(sprintf('%d\n', triali))
+    #cat(sprintf('%d\n', triali))
     for(datafilenum in c(1:length(datafilenames))){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
@@ -985,7 +985,8 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
     
     #current fix for summer data being non-randomized and not counterbalanced
     #triallist <- dat$trial
-    triallist <- c(1,2,90)
+    #triallist <- c(1,2,90)
+    triallist <- c(1,2,3,4,89,90)
     
     if(group == '30' & set == 'su2020'){
       n <- triallist[seq(1,length(triallist),2)]
@@ -1023,7 +1024,7 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
     }
-    dev.off()
+    #dev.off()
     
   }
 }
@@ -1170,7 +1171,7 @@ getCheckGroupCircularLC <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getCheckParticipantCircularLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -1220,7 +1221,7 @@ getCheckGroupStep1Samp <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getCheckParticipantCircularLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -1269,6 +1270,7 @@ plotCheckGroupCircFreq <- function(groups = c('30', '60'), set){
     #current fix for summer data being non-randomized and not counterbalanced
     #triallist <- dat$trial
     triallist <- c(1:90)
+
     
     if(group == '30' & set == 'su2020'){
       n <- triallist[seq(1,length(triallist),2)]
@@ -1307,7 +1309,7 @@ plotCheckGroupCircFreq <- function(groups = c('30', '60'), set){
         
         lines(distsubdat, points.plot=FALSE, col='#696969', shrink=.85)
         
-        legend(-1.25,-0.95,legend=c('3+ Step1 samples','<3 Step1 samples'),
+        legend(-1.25,-0.95,legend=c('with move throughs','without move throughs'),
                col=c('#e51636ff','#005de4ff'),
                pch=1,bty='n',cex=1)
         
@@ -1326,7 +1328,7 @@ plotCheckGroupCircFreq <- function(groups = c('30', '60'), set){
         
         lines(distsubdat, points.plot=FALSE, col='#696969', shrink=.85)
         
-        legend(-1.25,-0.95,legend=c('3+ Step1 samples','<3 Step1 samples'),
+        legend(-1.25,-0.95,legend=c('with move throughs','without move throughs'),
                col=c('#e51636ff','#005de4ff'),
                pch=1,bty='n',cex=1)
         
@@ -1341,7 +1343,7 @@ plotCheckGroupCircFreq <- function(groups = c('30', '60'), set){
 }
 
 #plot for presentations below, but is similar to pdf generated above
-plotPresentCheckGroupCircFreq <- function(groups = c('30', '60'), target='inline', set){
+plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inline', set){
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg' & set == 'fa2020'){
@@ -1468,11 +1470,11 @@ getParticipantMoveThrough <- function(group,set){
 
 plotParticipantMoveThrough <- function(groups=c('30','60'),set){
   
-  if(set == 'fa2020'){
-    pdf("data/mirrorreversal-fall/doc/fig/ParticipantMoveThrough.pdf", width=11, pointsize = 8.5)
-  } else if (set == 'su2020'){
-    pdf("data/mReversalNewAlpha3-master/doc/fig/ParticipantMoveThrough.pdf")
-  }
+  # if(set == 'fa2020'){
+  #   pdf("data/mirrorreversal-fall/doc/fig/ParticipantMoveThrough.pdf", width=11, pointsize = 8.5)
+  # } else if (set == 'su2020'){
+  #   pdf("data/mReversalNewAlpha3-master/doc/fig/ParticipantMoveThrough.pdf")
+  # }
   
   for(group in groups){
     data <- getParticipantMoveThrough(group=group, set=set)
@@ -1482,7 +1484,7 @@ plotParticipantMoveThrough <- function(groups=c('30','60'),set){
     #axis(1, at = c(1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90))
     axis(2, at = c(0, 2, 4, 6, 8, 10, 20, 30, 60)) #tick marks for y axis
   }
-  dev.off()
+  #dev.off()
   
 }
 
@@ -1503,7 +1505,7 @@ getTrialOneParticipantsWMoveThrough<- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getCheckParticipantCircularLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -1746,7 +1748,7 @@ plotMoveThroughLC <- function(groups = c('30', '60'), moves = c('0','1'), target
     }
     
     #add legend
-    legend(60,25,legend=c('no move through','move through'),
+    legend(60,25,legend=c('without exploration','with exploration'),
            col=c(colourscheme[['0']][['S']],colourscheme[['1']][['S']]),
            lty=1,bty='n',cex=1,lwd=2)
     
@@ -1909,7 +1911,7 @@ plotMoveThroughAllTasks <- function(groups = c('30', '60'), moves = c('0','1'), 
     }
     
     #add legend
-    legend(80,0,legend=c('no move through','move through'),
+    legend(80,0,legend=c('without exploration','with exploration'),
            col=c(colourscheme[['0']][['S']],colourscheme[['1']][['S']]),
            lty=1,bty='n',cex=1,lwd=2)
     
@@ -2212,7 +2214,7 @@ getGroupAllTasksMT <- function(group, set, step){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     alldat <- handleOneMTFile(filename = datafilename, step = step)
     # per target location, get reachdev for corresponding trials
     
@@ -2544,7 +2546,7 @@ getGroupRDMT <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantRDMT(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -2588,12 +2590,15 @@ plotGroupRDMT <- function(group, target='inline', set) {
   #meanGroupReaches <- list() #empty list so that it plots the means last
   dat <- getGroupRDMT(group=group, set = set)
   #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-  #dat <- dat[-which(dat$participant == '216814'),]
+  if(group == '60'){
+    dat <- dat[-which(dat$participant == '216814'),]
+  }
+  
   #NA to create empty plot
   # could maybe use plot.new() ?
   plot(NA, NA, xlim = c(-1,26), ylim=c(-5,190),
        xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
-       main = sprintf('%s-deg target: Trial 21', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+       main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
   axis(1, at = c(0, 5, 10, 15, 20, 25)) #tick marks for x axis
   axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
   time <- dat$time
@@ -2896,12 +2901,15 @@ plotMoveThroughGroupRDMT <- function(group, moves = c('0', '1'), target='inline'
     #meanGroupReaches <- list() #empty list so that it plots the means last
     dat <- getMoveThroughGroupRDMT(group=group, set = set, moved=move)
     #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-    #dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    if (group == '60' & move == '1'){
+      dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    }
+    
     #NA to create empty plot
     # could maybe use plot.new() ?
     plot(NA, NA, xlim = c(-1,26), ylim=c(-5,190),
          xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
-         main = sprintf('%s-deg target: Trial 21', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+         main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
     axis(1, at = c(0, 5, 10, 15, 20, 25)) #tick marks for x axis
     axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
     time <- dat$time
@@ -3017,7 +3025,7 @@ getGroupAllTasksPathLength <- function(group, set, step){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     alldat <- handleOneFilePathLength(filename = datafilename, step = step)
     # per target location, get reachdev for corresponding trials
     
@@ -3336,7 +3344,7 @@ getGroupRDPL <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantRDPL(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -3380,12 +3388,14 @@ plotGroupRDPL <- function(group, target='inline', set) {
   #meanGroupReaches <- list() #empty list so that it plots the means last
   dat <- getGroupRDPL(group=group, set = set)
   #in 60 deg group, one participant had PL of 71. we can remove them and see relationship
-  #dat <- dat[-which(dat$participant == '216814'),]
+  if (group == '60'){
+    dat <- dat[-which(dat$participant == '216814'),]
+  }
   #NA to create empty plot
   # could maybe use plot.new() ?
   plot(NA, NA, xlim = c(0,6), ylim=c(-5,190),
        xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
-       main = sprintf('%s-deg target: Trial 21', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+       main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
   axis(1, at = c(0, 0.5, 1, 2, 3, 4, 5, 6)) #tick marks for x axis
   axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
   path <- dat$path_length
@@ -3688,12 +3698,15 @@ plotMoveThroughGroupRDPL <- function(group, moves = c('0', '1'), target='inline'
     #meanGroupReaches <- list() #empty list so that it plots the means last
     dat <- getMoveThroughGroupRDPL(group=group, set = set, moved=move)
     #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-    #dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    if(group == '60' & move == '1'){
+      dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    }
+    
     #NA to create empty plot
     # could maybe use plot.new() ?
     plot(NA, NA, xlim = c(-1,11), ylim=c(-5,190),
          xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
-         main = sprintf('%s-deg target: Trial 21', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+         main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
     axis(1, at = c(0, 2, 4, 6, 8, 10)) #tick marks for x axis
     axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
     path <- dat$path_length
@@ -3801,7 +3814,7 @@ getGroupCircularAligned <- function(group, set){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
     
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     adat <- getParticipantCircularAligned(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -4070,7 +4083,7 @@ getGroupCircularLC <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantCircularLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -4344,7 +4357,7 @@ getGroupCircularRAE <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantCircularRAE(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -4902,7 +4915,7 @@ getAlGroupMirrorLC <- function(group, set){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
     
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     adat <- getAlParticipantMirrorLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -5036,7 +5049,7 @@ getGroupMirrorLC <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantMirrorLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -5244,7 +5257,7 @@ getGroupMirrorRAE <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantMirrorRAE(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -5424,7 +5437,7 @@ getGroupAllTasksLC <- function(group, set){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     alldat <- getParticipantAllTasksLC(filename = datafilename)
     # per target location, get reachdev for corresponding trials
     
@@ -5627,7 +5640,7 @@ getGroupCompLC <- function(){
   dataoutput<- data.frame() #create place holder
   for(datafilenum in c(1:length(datafilenames))){
     datafilename <- sprintf('data/mReversalNewAlpha3-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     mdat <- getParticipantCompLC(filename = datafilename)
     #mdat <- mdat[which(mdat$targetangle_deg == 60),] #get 30 degrees only
     
