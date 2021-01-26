@@ -31,8 +31,8 @@ getSUDataQualtricsMatch <- function(set = 'su2020'){
   #this list also contains people who will be removed due to performance in mirror reversal task or other data cleaning procedures
   #we use a list generated to keep track of removed participants
   
-  qualt <- read.csv('data/mReversalNewAlpha3-master/data/SU_QualtricsData.csv', stringsAsFactors = F)
-  ppdel <- read.csv('data/mReversalNewAlpha3-master/data/pplist_removed.csv', stringsAsFactors = F)
+  qualt <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_QualtricsData.csv', stringsAsFactors = F)
+  ppdel <- read.csv('data/mReversalNewAlpha3-master/data/processed/pplist_removed.csv', stringsAsFactors = F)
   
   
   ppdel <- ppdel$participant
@@ -60,29 +60,92 @@ getSUDataQualtricsMatch <- function(set = 'su2020'){
   #ab <- qualtoutput[which(qualtoutput %in% dataoutput == FALSE)]
 }
 #do similar function for Fall Data
+# Check: Whether Qualtrics participants are the same as what we have already analyzed (Fall data set for now)
+getFADataQualtricsMatch <- function(set = 'fa2020'){
+  
+  #participant list from behavioral data
+  
+  datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+  
+  
+  
+  dataoutput<- c() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- getParticipantCircularAligned(filename = datafilename)
+    ppname <- unique(adat$participant)
+    
+    dataoutput <- c(dataoutput, ppname)
+  }
+  
+  
+  #participant list from Qualtrics data
+  #this list also contains people who will be removed due to performance in mirror reversal task or other data cleaning procedures
+  #we use a list generated to keep track of removed participants
+  
+  qualt <- read.csv('data/mirrorreversal-fall/data/processed/FA_QualtricsData.csv', stringsAsFactors = F)
+  ppdel <- read.csv('data/mirrorreversal-fall/data/processed/pplist_removed.csv', stringsAsFactors = F)
+  
+  
+  ppdel <- ppdel$participant
+  ppqualt <- qualt$id
+  for(pp in ppdel){
+    if (pp %in% ppqualt){
+      #print(pp)
+      qualt <- qualt[-which(qualt$id == pp),] 
+      #print(nrow(qualt))
+    }
+  }
+  
+  
+  #check if the two match: will only print TRUE if they do
+  print(unique(dataoutput %in% qualt$id[-c(1:2)]))
+  
+  allpp <- data.frame(dataoutput, qualt$id[-c(1:2)])
+  return(allpp)
+  #use below to figure out who else is not included in the already analyzed data, if necessary
+  #qualtoutput <- qualt$id[-c(1:2)]
+  #ab <- qualtoutput[which(qualtoutput %in% dataoutput == FALSE)]
+  #or vice-versa
+  #qualtoutput <- qualt$id[-c(1:2)]
+  #ab <- dataoutput[which(dataoutput %in% qualtoutput == FALSE)]
+}
+
 
 #Function below will generate csv file of Qualtric data that contains the participants we have not removed and have data for
 getQualtricsData <- function(set){
   if(set=='su2020'){
     qualt <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_QualtricsData.csv', stringsAsFactors = F)
     ppdel <- read.csv('data/mReversalNewAlpha3-master/data/processed/pplist_removed.csv', stringsAsFactors = F)
-  } else if (set=='fa2020'){
-    qualt <- read.csv('data/mirrorreversal-fall/data/FA_QualtricsData.csv', stringsAsFactors = F)
-    ppdel <- read.csv('data/mirrorreversal-fall/data/pplist_removed.csv', stringsAsFactors = F)
-  }
-  
-  ppdel <- ppdel$participant
-  ppqualt <- qualt$Please.enter.your.URPP.number.
-  for(pp in ppdel){
-    if (pp %in% ppqualt){
-      qualt <- qualt[-which(qualt$Please.enter.your.URPP.number. == pp),]
+    
+    ppdel <- ppdel$participant
+    ppqualt <- qualt$Please.enter.your.URPP.number.
+    for(pp in ppdel){
+      if (pp %in% ppqualt){
+        qualt <- qualt[-which(qualt$Please.enter.your.URPP.number. == pp),]
+      }
     }
-  }
-  
-  if(set=='su2020'){
+    
     write.csv(qualt, file='data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', row.names = F)
-  } else if(set=='fa2020'){
+    
+  } else if (set=='fa2020'){
+    qualt <- read.csv('data/mirrorreversal-fall/data/processed/FA_QualtricsData.csv', stringsAsFactors = F)
+    ppdel <- read.csv('data/mirrorreversal-fall/data/processed/pplist_removed.csv', stringsAsFactors = F)
+    
+    ppdel <- ppdel$participant
+    ppqualt <- qualt$id
+    for(pp in ppdel){
+      if (pp %in% ppqualt){
+        qualt <- qualt[-which(qualt$id == pp),] 
+      }
+    }
+    
     write.csv(qualt, file='data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', row.names = F)
+    
   }
 }
 
