@@ -985,6 +985,7 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
     
     #current fix for summer data being non-randomized and not counterbalanced
     #triallist <- dat$trial
+    #triallist <- c(1:90)
     #triallist <- c(1,2,90)
     triallist <- c(1,2,3,4,89,90)
     
@@ -1479,10 +1480,10 @@ plotParticipantMoveThrough <- function(groups=c('30','60'),set){
   for(group in groups){
     data <- getParticipantMoveThrough(group=group, set=set)
     barplot(data$ppno~data$trial, xlab = 'Trial', ylab = 'Frequency of Participants',
-            main = sprintf('Participants with move throughs: %s Deg. Target', group), axes = FALSE, #axisnames=FALSE,
-            ylim = c(-1,61))
+            main = sprintf('Participants with move throughs: %s Deg. Target', group))#, axes = FALSE, #axisnames=FALSE,
+            #ylim = c(-1,61))
     #axis(1, at = c(1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90))
-    axis(2, at = c(0, 2, 4, 6, 8, 10, 20, 30, 60)) #tick marks for y axis
+    #axis(2, at = c(0, 2, 4, 6, 8, 10, 20, 30, 60)) #tick marks for y axis
   }
   #dev.off()
   
@@ -3777,7 +3778,11 @@ getParticipantsOutlierAligned <- function(group, set){
 
 #PPs with below 5 trials per target (fa2020)
 #30 deg target: 216709 (4 trials), 218425 (2 trials), 219301 (4 trials), 221128 (4 trials)
+#             : 216181 (2 trials), 216319 (4 trials), 216637 (4 trials), 217333 (3 trials), 217780 (3 trials), 220414 (1 trial),
+#               220534 (4 trials), 220627 (4 trials), 222193 (3 trials), 222496 (3 trials), 222619 (2 trials), 224755 (4 trials)
 #60 deg target: 218425 (0 trials)
+#             : 216319 (4 trials), 217333 (0 trials), 218137 (2 trials), 218404 (4 trials), 220414 (0 trials), 220534 (2 trials),
+#               222193 (3 trials), 222298 (2 trials), 222391 (4 trials), 222496 (3 trials), 222619 (1 trial), 223720 (2 trials), 224812 (2 trials)
 
 #su2020
 #30 deg target: 213871, 214666, 215218, 215677
@@ -5886,4 +5891,14 @@ plotLearnedLC <- function(target='inline') {
 #     
 #     write.csv(ndat, file=sprintf('data/mReversalNewAlpha3-master/data/p%s/p%s_full.csv', ppno, ppno), row.names = F) 
 #   }
+# }
+
+# #Normalize pathlength
+# output <- c()
+# for (i in meanPL){ #pathlength contains all PL measures
+# 
+#   normPL <- (i - minPL)/(maxPL - minPL) #make sure to get max and min of vector
+# 
+#   output <- c(output, normPL)
+# 
 # }
