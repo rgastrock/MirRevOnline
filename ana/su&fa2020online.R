@@ -1837,7 +1837,7 @@ plotMoveThroughLCSU <- function(groups = c('30', '60'), moves = c('0','1'), targ
 
 
 #But we can also plot for all phases
-plotMoveThroughAllTasks <- function(groups = c('30', '60'), moves = c('0','1'), target='inline', set) {
+plotMoveThroughAllTasks <- function(groups = c('30', '60'), moves = c('0','1'), target='inline', set='fa2020') {
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
@@ -1928,10 +1928,10 @@ plotMoveThroughAllTasks <- function(groups = c('30', '60'), moves = c('0','1'), 
 }
 
 plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1'), target='inline', set='su2020') {
-  for (move in moves){
+  for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig7_%s_MoveThroughAllTasks.svg', move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig7_%s_MoveThroughAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1941,13 +1941,13 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
     # could maybe use plot.new() ?
     plot(NA, NA, xlim = c(0,131), ylim = c(-20,140), 
          xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
-         main = sprintf("Presence of move throughs: %s", move), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
     abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
     abline(v= c(20, 110), col = 8, lty = 2)
     axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
     axis(2, at = c(-15, 0, 15, 30, 60, 90, 120)) #tick marks for y axis
     
-    for(group in groups){
+    for(move in moves){
       #read in files created by getGroupConfidenceInterval in filehandling.R
       groupconfidenceAligned <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_%s_CircularAligned_CI.csv', group, move))
       groupconfidenceLC <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_%s_CircularLC_CI.csv', group, move))
@@ -1955,14 +1955,14 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       
       
       
-      colourscheme <- getOnlineColourScheme(groups = group)
+      colourscheme <- getMoveThroughColourScheme(moves = move)
       #plot Aligned Data
       #take only first, last and middle columns of file
       lower <- groupconfidenceAligned[,1]
       upper <- groupconfidenceAligned[,3]
       mid <- groupconfidenceAligned[,2]
       
-      col <- colourscheme[[group]][['T']] #use colour scheme according to group
+      col <- colourscheme[[move]][['T']] #use colour scheme according to group
       
       #upper and lower bounds create a polygon
       #polygon creates it from low left to low right, then up right to up left -> use rev
@@ -1976,7 +1976,7 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       
       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
       
-      col <- colourscheme[[group]][['S']]
+      col <- colourscheme[[move]][['S']]
       lines(x = x, y = na.omit(mid),col=col,lty=1)
       
       #plot Mirrored Data
@@ -1984,7 +1984,7 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       upper <- groupconfidenceLC[,3]
       mid <- groupconfidenceLC[,2]
       
-      col <- colourscheme[[group]][['T']] #use colour scheme according to group
+      col <- colourscheme[[move]][['T']] #use colour scheme according to group
       
       #upper and lower bounds create a polygon
       #polygon creates it from low left to low right, then up right to up left -> use rev
@@ -1996,7 +1996,7 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       }
       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
       
-      col <- colourscheme[[group]][['S']]
+      col <- colourscheme[[move]][['S']]
       lines(x = x, y = na.omit(mid),col=col,lty=1)
       
       #plot Wahout Data
@@ -2005,7 +2005,7 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       upper <- groupconfidenceRAE[,3]
       mid <- groupconfidenceRAE[,2]
       
-      col <- colourscheme[[group]][['T']] #use colour scheme according to group
+      col <- colourscheme[[move]][['T']] #use colour scheme according to group
       
       #upper and lower bounds create a polygon
       #polygon creates it from low left to low right, then up right to up left -> use rev
@@ -2017,13 +2017,13 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
       }
       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
       
-      col <- colourscheme[[group]][['S']]
+      col <- colourscheme[[move]][['S']]
       lines(x = x, y = na.omit(mid),col=col,lty=1)
     }
     
     #add legend
-    legend(80,0,legend=c('30° target','60° target'),
-           col=c(colourscheme[['30']][['S']],colourscheme[['60']][['S']]),
+    legend(80,0,legend=c('without exploration','with exploration'),
+           col=c(colourscheme[['0']][['S']],colourscheme[['1']][['S']]),
            lty=1,bty='n',cex=1,lwd=2)
     
     #close everything if you saved plot as svg
@@ -2036,6 +2036,117 @@ plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1')
   
   
 }
+
+#Same as above but by move throughs
+# plotMoveThroughAllTasksSU <- function(groups = c('30', '60'), moves = c('0','1'), target='inline', set='su2020') {
+#   for (move in moves){
+#     #but we can save plot as svg file
+#     if (target=='svg'){
+#       svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig7_%s_MoveThroughAllTasks.svg', move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+#     }
+#     
+#     # create plot
+#     #meanGroupReaches <- list() #empty list so that it plots the means last
+#     
+#     #NA to create empty plot
+#     # could maybe use plot.new() ?
+#     plot(NA, NA, xlim = c(0,131), ylim = c(-20,140), 
+#          xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+#          main = sprintf("Presence of move throughs: %s", move), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+#     abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+#     abline(v= c(20, 110), col = 8, lty = 2)
+#     axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+#     axis(2, at = c(-15, 0, 15, 30, 60, 90, 120)) #tick marks for y axis
+#     
+#     for(group in groups){
+#       #read in files created by getGroupConfidenceInterval in filehandling.R
+#       groupconfidenceAligned <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_%s_CircularAligned_CI.csv', group, move))
+#       groupconfidenceLC <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_%s_CircularLC_CI.csv', group, move))
+#       groupconfidenceRAE <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_%s_CircularRAE_CI.csv', group, move))
+#       
+#       
+#       
+#       colourscheme <- getOnlineColourScheme(groups = group)
+#       #plot Aligned Data
+#       #take only first, last and middle columns of file
+#       lower <- groupconfidenceAligned[,1]
+#       upper <- groupconfidenceAligned[,3]
+#       mid <- groupconfidenceAligned[,2]
+#       
+#       col <- colourscheme[[group]][['T']] #use colour scheme according to group
+#       
+#       #upper and lower bounds create a polygon
+#       #polygon creates it from low left to low right, then up right to up left -> use rev
+#       #x is just trial nnumber, y depends on values of bounds
+#       if (group == '30'){
+#         x <- seq(1,nrow(groupconfidenceAligned),2)
+#       } else if (group == '60'){
+#         x <- seq(2,nrow(groupconfidenceAligned),2)
+#       }
+#       
+#       
+#       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+#       
+#       col <- colourscheme[[group]][['S']]
+#       lines(x = x, y = na.omit(mid),col=col,lty=1)
+#       
+#       #plot Mirrored Data
+#       lower <- groupconfidenceLC[,1]
+#       upper <- groupconfidenceLC[,3]
+#       mid <- groupconfidenceLC[,2]
+#       
+#       col <- colourscheme[[group]][['T']] #use colour scheme according to group
+#       
+#       #upper and lower bounds create a polygon
+#       #polygon creates it from low left to low right, then up right to up left -> use rev
+#       #x is just trial nnumber, y depends on values of bounds
+#       if (group == '30'){
+#         x <- seq(21,(21 + nrow(groupconfidenceLC)) - 1,2)
+#       } else if (group == '60'){
+#         x <- seq(22,(22 + nrow(groupconfidenceLC)) - 2,2)
+#       }
+#       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+#       
+#       col <- colourscheme[[group]][['S']]
+#       lines(x = x, y = na.omit(mid),col=col,lty=1)
+#       
+#       #plot Wahout Data
+#       #take only first, last and middle columns of file
+#       lower <- groupconfidenceRAE[,1]
+#       upper <- groupconfidenceRAE[,3]
+#       mid <- groupconfidenceRAE[,2]
+#       
+#       col <- colourscheme[[group]][['T']] #use colour scheme according to group
+#       
+#       #upper and lower bounds create a polygon
+#       #polygon creates it from low left to low right, then up right to up left -> use rev
+#       #x is just trial nnumber, y depends on values of bounds
+#       if (group == '30'){
+#         x <- seq(111,(111 + nrow(groupconfidenceRAE)) - 1,2)
+#       } else if (group == '60'){
+#         x <- seq(112,(112 + nrow(groupconfidenceRAE)) - 2,2)
+#       }
+#       polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+#       
+#       col <- colourscheme[[group]][['S']]
+#       lines(x = x, y = na.omit(mid),col=col,lty=1)
+#     }
+#     
+#     #add legend
+#     legend(80,0,legend=c('30° target','60° target'),
+#            col=c(colourscheme[['30']][['S']],colourscheme[['60']][['S']]),
+#            lty=1,bty='n',cex=1,lwd=2)
+#     
+#     #close everything if you saved plot as svg
+#     if (target=='svg') {
+#       dev.off()
+#     }
+#     
+#   }
+#   
+#   
+#   
+# }
 
 #density or frequency plots: LINEAR-----
 # getParticipantFrequency <- function(filename){
@@ -5901,4 +6012,36 @@ plotLearnedLC <- function(target='inline') {
 # 
 #   output <- c(output, normPL)
 # 
+# }
+
+# runAllFunc <- function(){
+#   getMovedGroupCircularConfInt(set='fa2020', moved = 0)
+#   getMovedGroupCircularConfInt(set='fa2020', moved = 1)
+#   getAlignedMovedGroupCircularConfInt(set='fa2020', moved = 0)
+#   getAlignedMovedGroupCircularConfInt(set='fa2020', moved = 1)
+#   getRAEMovedGroupCircularConfInt(set='fa2020', moved = 0)
+#   getRAEMovedGroupCircularConfInt(set='fa2020', moved = 1)
+#   plotMoveThroughLC(target='svg')
+#   plotMoveThroughAllTasks(target='svg')
+#   
+#   getGroupAllTasksMTConfInt(set='fa2020', step = 2)
+#   plotAllTasksMT(target='svg', set='fa2020')
+#   plotGroupRDMT(group = '30', target = 'svg', set = 'fa2020')
+#   plotGroupRDMT(group = '60', target = 'svg', set = 'fa2020')
+#   getMoveThroughStep1MT(set='fa2020', moved = 0)
+#   getMoveThroughStep1MT(set='fa2020', moved = 1)
+#   plotMoveThroughAllTasksMTStep1(target='svg', set='fa2020')
+#   plotMoveThroughGroupRDMT(group = '30', target='svg', set='fa2020')
+#   plotMoveThroughGroupRDMT(group = '60', target='svg', set='fa2020')
+#   
+#   getGroupAllTasksPathLengthConfInt(set='fa2020', step = 2)
+#   plotAllTasksPathLength(target='svg', set='fa2020')
+#   plotGroupRDPL(group = '30', target = 'svg', set = 'fa2020')
+#   plotGroupRDPL(group = '60', target = 'svg', set = 'fa2020')
+#   getMoveThroughStep1PL(set='fa2020', moved = 0)
+#   getMoveThroughStep1PL(set='fa2020', moved = 1)
+#   plotMoveThroughAllTasksPLStep1(target='svg', set='fa2020')
+#   plotMoveThroughGroupRDPL(group = '30', target='svg', set='fa2020')
+#   plotMoveThroughGroupRDPL(group = '60', target='svg', set='fa2020')
+#   
 # }

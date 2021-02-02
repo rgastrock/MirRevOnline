@@ -15,6 +15,7 @@ We have written code that pre-processes the data, plots figures, and runs statis
 ```{r message=FALSE, warning=FALSE}
 source('ana/shared.R')
 source('ana/su&fa2020online.R')
+source('ana/qualtricsdata.R')
 ```
 
 # Data sets
@@ -33,7 +34,7 @@ Some participants had to be removed due to different issues, including:
 
 For baseline reaches, some participants were reaching in different directions, even though the task required that they reach towards targets in the upper-right quadrant of the workspace. Here, we only included trials that fell within this quadrant for the aligned session. If a participant was left with less than half the data for each target location (i.e. less than 5 trials), they were removed from further analyses.
 
-This led to N = 109 for the instructed group, and N = 106 for the non-instructed group.
+This led to N = 105 for the instructed group, and N = 519 for the non-instructed group.
 
 ## Experiment Schedule
 
@@ -242,6 +243,97 @@ plotAllTasksPathLength(set='su2020')
 ```
 
 We find that path lengths are initially longer during the first few trials of the mirror reversal, but eventually get close to baseline levels.
+
+# Effects of device used (Mouse vs. Trackpad)
+We compare learning curves, movement times, and path length for each target location for those that used either a mouse or a trackpad to accomplish the task.
+
+## Non-instructed group
+Current sample size: Mouse (N = 159), Trackpad (N = 360)
+
+### Learning rates
+
+```{r}
+plotDeviceAllTasks()
+```
+
+### Movement time
+
+```{r}
+plotDeviceMT()
+```
+
+### Path length
+
+```{r}
+plotDevicePL()
+```
+
+## Instructed group
+Current sample size: Mouse (N = 28), Trackpad (N = 77)
+
+### Learning rates
+
+```{r}
+plotDeviceAllTasksSU()
+```
+
+### Movement time
+
+```{r}
+plotDeviceMTSU()
+```
+
+### Path length
+
+```{r}
+plotDevicePLSU()
+```
+
+# Effects of biological sex (Male vs. Female)
+We compare learning curves, movement times, and path length for each target location for males and females that accomplished the task.
+
+## Non-instructed group
+Current sample size: Male (N = 133), Female (N = 385)
+
+### Learning rates
+
+```{r}
+plotSexAllTasks()
+```
+
+### Movement time
+
+```{r}
+plotSexMT()
+```
+
+### Path length
+
+```{r}
+plotSexPL()
+```
+
+## Instructed group
+Current sample size: Male (N = 27), Female (N = 78)
+
+### Learning rates
+
+```{r}
+plotSexAllTasksSU()
+```
+
+### Movement time
+
+```{r}
+plotSexMTSU()
+```
+
+### Path length
+
+```{r}
+plotSexPLSU()
+```
+
 
 # Conclusions
 

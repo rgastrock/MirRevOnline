@@ -352,3 +352,51 @@ getMoveThroughColourScheme <- function(moves = c('0','1')){
   }
   return(colourscheme)
 }
+
+getDeviceColourScheme <- function(devices = c('Mouse','Trackpad')){
+  #create a list containing the colourscheme per group
+  for (device in devices){
+    colourscheme <- list()
+    
+    colourscheme[['Trackpad']] <- list('S'='#ff8200ff', # pure orange
+                                'T'='#ff82002f')    #2f gives a lighter shade of the color
+    
+    #colourscheme[['30']] <- list('S'='#e51636ff', #vivid/york red
+    #                            'T'='#e516362f')
+    
+    colourscheme[['Mouse']] <- list('S'='#c400c4ff', #strong magenta
+                                'T'='#c400c42f')
+    
+    #colourscheme[['60']] <-   list('S'='#005de4ff', #pure blue
+    #                              'T'='#005de42f')
+    
+    #colourscheme[['ALIGNED']] <-   list('S'='#A9A9A9ff', #dark grey
+    #                               'T'='#A9A9A92f')
+    
+  }
+  return(colourscheme)
+}
+
+getSexColourScheme <- function(sexes = c('Male','Female')){
+  #create a list containing the colourscheme per group
+  for (sex in sexes){
+    colourscheme <- list()
+    
+    colourscheme[['Female']] <- list('S'='#ff8200ff', # pure orange
+                                       'T'='#ff82002f')    #2f gives a lighter shade of the color
+    
+    #colourscheme[['30']] <- list('S'='#e51636ff', #vivid/york red
+    #                            'T'='#e516362f')
+    
+    colourscheme[['Male']] <- list('S'='#c400c4ff', #strong magenta
+                                    'T'='#c400c42f')
+    
+    #colourscheme[['60']] <-   list('S'='#005de4ff', #pure blue
+    #                              'T'='#005de42f')
+    
+    #colourscheme[['ALIGNED']] <-   list('S'='#A9A9A9ff', #dark grey
+    #                               'T'='#A9A9A92f')
+    
+  }
+  return(colourscheme)
+}
