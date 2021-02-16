@@ -327,6 +327,204 @@ plotLearningGen <- function(groups = c('far', 'near'), target='inline') {
   
 }
 
+plotLearningGenSignFlip <- function(groups = c('far', 'near'), target='inline') {
+  #groups are far from mirror axis (30, 330, 150), or near mirror axis (60, 300, 120)
+  
+  #but we can save plot as svg file
+  if (target=='svg') {
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig1_LearningGenSignFlip.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  # create plot
+  #meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,121), ylim = c(-10,160), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  lim <- par('usr')
+  rect(81, lim[3]-1, 120, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
+  abline(h = 0, col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  #abline(h = 60, col = 8, lty = 2)
+  #abline(h = 120, col = 8, lty = 2)
+  #we could color code the dashed lines at perfect compensation, but washout needs to be grey
+  perfnear <- rep(60, 100) #add 5 points to either side to extend the line
+  lines(x = c(1:100), y = perfnear, col = '#005de4ff', lty = 2)
+  perffar <- rep(120, 100) #add 5 points to either side to extend the line
+  lines(x = c(1:100), y = perffar, col = '#e51636ff', lty = 2) 
+  #then add grey lines
+  greynear <- rep(60, 7) #7 is however many the x axis values are
+  lines(x = c(-5:1), y = greynear, col = 8, lty = 2) #5 x values before 0
+  greyfar <- rep(120, 7) #7 is however many the x axis values are
+  lines(x = c(-5:1), y = greyfar, col = 8, lty = 2)
+  
+  greynear <- rep(60, 26) #26 is however many the x axis values are
+  lines(x = c(100:125), y = greynear, col = 8, lty = 2) #4 x values after 121
+  greyfar <- rep(120, 26) #26 is however many the x axis values are
+  lines(x = c(100:125), y = greyfar, col = 8, lty = 2) #4 x values after 121
+  
+  axis(1, at = c(1, 21, 41, 61, 81, 101, 120)) #tick marks for x axis
+  axis(3, at = c(10, 30, 50, 70, 90, 110), labels = c('30°/60°', '300°/330°', '120°/150°', '30°/60°', '30°/60°', '30°/60°'), line = -2, tick = FALSE) #tick marks for x axis
+  axis(2, at = c(0, 30, 60, 90, 120, 150), las = 2) #tick marks for y axis
+  
+  
+  #read in CI file
+  groupconfidence <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen_CI.csv')
+  #we would want to implement a sign flip for blocks with negative values (blocks 2 and 3)
+  #But we would want to keep washout the same
+  groupconfidence[21:60,] <- ((groupconfidence[21:60,])*-1)
+  
+  
+  # we want to color code plot according to target distance from mirror axis (far and near groups)
+  # append far and near identifiers to CI data
+  dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv')
+  dat <- dat$targetangle_deg
+  groupconfidence$targetangle_deg <- dat
+  targetdist <- c()
+  for (target in groupconfidence$targetangle_deg){
+    if (target %in% c(30, 330, 150)){
+      dist <- 'far'
+      targetdist <- c(targetdist, dist)
+    } else if (target %in% c(60, 300, 120)){
+      dist <- 'near'
+      targetdist <- c(targetdist, dist)
+    }
+  }
+  groupconfidence$targetdist <- targetdist
+  
+  for(group in groups){
+    colourscheme <- getOnlineGenColourScheme(groups = group)
+    
+    #plot Hand 1, Quadrant 1
+    #take only first, last and middle columns of file
+    lower <- groupconfidence[,1]
+    upper <- groupconfidence[,3]
+    mid <- groupconfidence[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(1,20,2)
+    } else if (group == 'near'){
+      x <- seq(2,20,2)
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+    #plot Hand 1, Quadrant 4
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(22,40,2)
+    } else if (group == 'near'){
+      x <- seq(21,40,2) #near is the first trial
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+    #plot Hand 1, Quadrant 2
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(42,60,2)
+    } else if (group == 'near'){
+      x <- seq(41,60,2) #near is the first trial
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+    #plot Hand 1, Quadrant 1 for a second time
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(61,80,2)
+    } else if (group == 'near'){
+      x <- seq(62,80,2) #near is the first trial
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+    #plot Hand 2, Quadrant 1
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(81,100,2)
+    } else if (group == 'near'){
+      x <- seq(82,100,2) #near is the first trial
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+    #plot Hand 2, Quadrant 1 WASHOUT
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == 'far'){
+      x <- seq(101,120,2)
+    } else if (group == 'near'){
+      x <- seq(102,120,2) #near is the first trial
+    }
+    
+    polygon(x = c(x, rev(x)), y = c(lower[x], rev(upper[x])), border=NA, col=col)
+    #polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = mid[x],col=col,lty=1)
+    
+  }
+  
+  #add legend
+  legend(61,30,legend=c('target far from mirror','target near mirror'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+  
+  
+}
+
 # movement time across trials----
 getGroupGenMT<- function(step){
   
