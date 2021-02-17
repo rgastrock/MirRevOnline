@@ -1044,3 +1044,99 @@ plotPLGen <- function(groups = c('far', 'near'), target='inline') {
   
   
 }
+
+# Time between Part 1 and Part 2----
+getDateOneFile <- function(filename){
+  
+  #each participant would have a date of completion in their raw file
+  # if the file can't be read, return empty list for now
+  df <- NULL
+  try(df <- read.csv(filename, stringsAsFactors = F), silent = TRUE)
+  if (is.null(df)) {
+    return(list())
+  }
+  
+  date <- unique(df$date)
+  id <- unique(df$participant)
+
+  # vectors as data frame columns:
+  dfid <- data.frame(id, date)
+  
+  return(dfid)
+}
+
+getGroupDates<- function(sets = c('part1', 'part2')){
+  
+  for (set in sets){
+    if (set == 'part1'){
+      datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+    } else if (set == 'part2'){
+      datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
+    }
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      if (set == 'part1'){
+        datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      } else if (set == 'part2'){
+        datafilename <- sprintf('data/mirrorgeneralization-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      }
+      
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      alldat <- getDateOneFile(filename = datafilename)
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- alldat
+      } else {
+        dataoutput <- rbind(dataoutput, alldat)
+      }
+    }
+    #return(dataoutput)
+    if (set == 'part1'){
+      write.csv(dataoutput, file=sprintf('data/mirrorreversal-fall/data/processed/%sDate.csv', set), row.names = F)
+    } else if (set == 'part2'){
+      write.csv(dataoutput, file=sprintf('data/mirrorgeneralization-master/data/processed/%sDate.csv', set), row.names = F)
+    }
+  }
+}
+
+getMatchGroupDates <- function(){
+  
+  part1dat <- read.csv(file='data/mirrorreversal-fall/data/processed/part1Date.csv')
+  part2dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/part2Date.csv')
+  
+  dat <- merge(part1dat, part2dat, by.x = 'id', by.y = 'id')
+  colnames(dat) <- c('id', 'part1_date', 'part2_date')
+  
+  dat$days <- as.numeric(as.Date(dat$part2_date) - as.Date(dat$part1_date))
+  
+  return(dat)
+  
+}
+
+plotDaysApart <- function(target='inline'){
+  
+  #but we can save plot as svg file
+  if (target=='svg') {
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig4_HistDaysApart.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  dat <- getMatchGroupDates()
+  width <- max(dat$days) - min(dat$days) #breaks is how many days are accounted for by each bar, so width here would be 1 day per bar
+  
+  hist(dat$days, breaks = width, main = 'Histogram for number of days between Parts 1 and 2',
+       xlab = 'Days', ylab = 'Frequency of participants', axes=FALSE)
+  axis(1, at = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130))
+  axis(2, at = c(0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45), las=2) #tick marks for y axis
+  
+  #cat(sprintf('mean: %s days apart \n',mean(dat$days)))
+  #cat(sprintf('median: %s days apart \n',median(dat$days)))
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+}
