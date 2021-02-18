@@ -1140,3 +1140,475 @@ plotDaysApart <- function(target='inline'){
   }
   
 }
+
+# Retention across Part 1 and Part 2----
+
+#baseline and first 20 trials of part 1, with baseline corrected first 20 trials of part 2
+#use only participants who have completed both parts
+
+getPart1Files <- function(){
+  # this function helps to list all files of participants that have also completed part 2
+  #use the files already saved for the date function to identify id's
+  part1dat <- read.csv(file='data/mirrorreversal-fall/data/processed/part1Date.csv')
+  part2dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/part2Date.csv')
+  
+  ppid <- part1dat$id[which(part1dat$id %in% part2dat$id)]
+  
+  datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+  datfiles <- c()
+  
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    alldat <- getDateOneFile(filename = datafilename)
+    
+    if(alldat$id %in% ppid){
+      datfiles <- c(datfiles,datafilename)
+    }
+  }
+  #return(datfiles)
+  datfiles <- data.frame(datfiles)
+  write.csv(datfiles, file='data/mirrorreversal-fall/data/processed/pplist_matched_part2.csv', row.names = F)
+}
+
+getRetentionAligned <- function(group){
+  
+
+  datafilenames <- read.csv('data/mirrorreversal-fall/data/processed/pplist_matched_part2.csv', stringsAsFactors = F)
+  datafilenames <- datafilenames$datfiles
+  
+  
+  dataoutput<- data.frame() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+
+    datafilename <- sprintf('%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- getParticipantCircularAligned(filename = datafilename)
+    # per target location, get reachdev for corresponding trials
+    
+    trial <- c(1:length(adat$trialno))
+    adat$trialno <- trial
+    for (triali in trial){
+      trialdat <- adat[which(adat$trialno == triali),]
+      #set reachdev to NA if not the target location we want
+      if (trialdat$targetangle_deg != group){
+        trialdat$reachdeviation_deg <- NA
+      }
+      adat[triali,] <- trialdat
+    }
+    ppreaches <- adat$reachdeviation_deg #get reach deviations column from learning curve data
+    ppdat <- data.frame(trial, ppreaches)
+    
+    ppname <- unique(adat$participant)
+    names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+    
+    if (prod(dim(dataoutput)) == 0){
+      dataoutput <- ppdat
+    } else {
+      dataoutput <- cbind(dataoutput, ppreaches)
+      names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+    }
+  }
+  return(dataoutput)
+}
+
+getRetentionAlignedOutlierRemoval <- function(groups = c('30', '60')){
+  for(group in groups){
+    #get aligned data for specific group
+    data <- getRetentionAligned(group = group)
+    #set outlier values (ie out of quadrant) to NA, this depends on target location
+    for (trialno in data$trial){
+      #go through each trial, replace outlier values with NA
+      ndat <- as.numeric(data[trialno, 2:ncol(data)])
+      if (group == '30'){
+        ndat[which(ndat < -30 | ndat > 60)] <- NA
+      } else if (group == '60'){
+        ndat[which(ndat < -60 | ndat > 30)] <- NA
+      }
+      data[trialno, 2:ncol(data)] <- ndat
+    }
+    #return(data)
+    write.csv(data, file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Aligned.csv', group), row.names = F)
+  }
+
+}
+
+getRetentionAlignedCI <- function(groups = c('30','60')){
+  for(group in groups){
+    # use cleaned aligned trials (i.e. only trials with reaches in correct quadrant)
+    data <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Aligned.csv', group), stringsAsFactors = F)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      #citrial <- getCircularConfidenceInterval(data = circ_subdat)
+      #citrial <- as.numeric(citrial)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Aligned_CI.csv', group), row.names = F) 
+      
+    }
+  }
+}
+
+getRetentionMirror<- function(groups = c('30', '60')){
+  for(group in groups){
+    datafilenames <- read.csv('data/mirrorreversal-fall/data/processed/pplist_matched_part2.csv', stringsAsFactors = F)
+    datafilenames <- datafilenames$datfiles
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      
+      datafilename <- sprintf('%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      mdat <- getParticipantCircularLC(filename = datafilename) #this function contains baseline correction procedure
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(mdat$trialno))
+      mdat$trialno <- trial
+      for (triali in trial){
+        trialdat <- mdat[which(mdat$trialno == triali),]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetangle_deg != group){
+          trialdat$circ_rd <- NA
+        }
+        mdat[triali,] <- trialdat
+      }
+      ppreaches <- mdat$circ_rd #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(mdat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    
+    #return(dataoutput)
+    write.csv(dataoutput, file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Mirror.csv', group), row.names = F)
+  }
+  
+}
+
+getRetentionMirrorCI <- function(groups = c('30','60')){
+  for(group in groups){
+    data <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Mirror.csv', group), stringsAsFactors = F)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+
+      write.csv(confidence, file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Mirror_CI.csv', group), row.names = F) 
+      
+    }
+  }
+}
+
+#For part 2 data, the baseline correction should depend on part 1 aligned data
+getParticipantPart2Retention <- function(filename){
+  
+  #read in aligned data, which already cleaned for baseline reaches
+  dat30 <- read.csv('data/mirrorreversal-fall/data/processed/30_Retention_Aligned.csv', stringsAsFactors = F, check.names = FALSE)
+  dat60 <- read.csv('data/mirrorreversal-fall/data/processed/60_Retention_Aligned.csv', stringsAsFactors = F, check.names = FALSE)
+  
+  part2dat <- getParticipantLearningGen(filename=filename)
+  ppid <- unique(part2dat$participant)
+  
+  bias30 <- dat30[,which(colnames(dat30) == ppid)]
+  bias30 <- as.circular(bias30, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+  bias30 <- median.circular(bias30, na.rm=TRUE)
+  bias60 <- dat60[,which(colnames(dat60) == ppid)]
+  bias60 <- as.circular(bias60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+  bias60 <- median.circular(bias60, na.rm=TRUE)
+  targetangle_deg <- c(30,60)
+  circ_rd <- c(bias30, bias60)
+  
+  biases <- data.frame(targetangle_deg,circ_rd)
+  
+  mdat <- part2dat[1:20,] #only first 20 trials for retention
+  
+  for (biasno in c(1: dim(biases)[1])){ #from 1 to however many biases there are in data
+    
+    target<- biases[biasno, 'targetangle_deg'] #get corresponding target angle
+    bias<- biases[biasno, 'circ_rd'] #get corresponding reachdev or bias
+    
+    #subtract bias from reach deviation for rotated session only
+    mdat$circ_rd[which(mdat$targetangle_deg == target)] <- mdat$circ_rd[which(mdat$targetangle_deg == target)] - bias
+    
+  }
+  return(mdat)
+}
+
+getGroupPart2Retention <- function(groups=c('30','60')){
+  for(group in groups){
+    datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      
+      datafilename <- sprintf('data/mirrorgeneralization-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      mdat <- getParticipantPart2Retention(filename = datafilename)
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(mdat$trialno))
+      mdat$trialno <- trial
+      for (triali in trial){
+        trialdat <- mdat[which(mdat$trialno == triali),]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetangle_deg != group){
+          trialdat$circ_rd <- NA
+        }
+        mdat[triali,] <- trialdat
+      }
+      ppreaches <- mdat$circ_rd #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(mdat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    #return(dataoutput)
+    write.csv(dataoutput, file=sprintf('data/mirrorgeneralization-master/data/processed/%s_Retention_Mirror.csv', group), row.names = F) 
+  }
+}
+
+getGroupPart2RetentionCI <- function(groups = c('30','60')){
+  for(group in groups){
+    data <- read.csv(sprintf('data/mirrorgeneralization-master/data/processed/%s_Retention_Mirror.csv',group), stringsAsFactors = F, check.names = FALSE)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+
+      write.csv(confidence, file=sprintf('data/mirrorgeneralization-master/data/processed/%s_Retention_Mirror_CI.csv', group), row.names = F) 
+      
+    }
+  }
+}
+
+plotRetention <- function(groups = c('30', '60'), target='inline') {
+
+  
+  #but we can save plot as svg file
+  if (target=='svg') {
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig5_Retention.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  # create plot
+  #meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,66), ylim = c(-10,160), #plus 5 on x axis
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  #lim <- par('usr')
+  #rect(81, lim[3]-1, 120, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
+  abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  #abline(v= c(20, 40, 60, 80, 100), col = 8, lty = 2)
+  axis(1, at = c(1, 10, 21, 30, 40)) #tick marks for x axis
+  nums <- c(1,10,20)
+  axis(1, at = c(46,55, 65), labels = nums)
+  axis(3, at = c(10, 30, 55), labels = c('aligned', 'mirror: part 1', 'mirror: part 2'), line = -2, tick = FALSE) #tick marks for x axis
+  axis(2, at = c(0, 30, 60, 90, 120, 150), las = 2) #tick marks for y axis
+  
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidenceAligned <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Aligned_CI.csv', group))
+    groupconfidencePart1 <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_Retention_Mirror_CI.csv', group))
+    groupconfidencePart1 <- groupconfidencePart1[1:20,]
+    groupconfidencePart2 <- read.csv(file=sprintf('data/mirrorgeneralization-master/data/processed/%s_Retention_Mirror_CI.csv', group))
+    
+    
+    
+    colourscheme <- getOnlineColourScheme(groups = group)
+    #plot Aligned Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceAligned[,1]
+    upper <- groupconfidenceAligned[,3]
+    mid <- groupconfidenceAligned[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:20), rev(c(1:20))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:20), y = mid,col=col,lty=1)
+    
+    #plot Mirrored Data
+    lower <- groupconfidencePart1[,1]
+    upper <- groupconfidencePart1[,3]
+    mid <- groupconfidencePart1[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(21:40), rev(c(21:40))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(21:40), y = mid,col=col,lty=1)
+    
+    #plot Wahout Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidencePart2[,1]
+    upper <- groupconfidencePart2[,3]
+    mid <- groupconfidencePart2[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    if (group == '30'){
+      x <- seq(46,65,2) #plus 5 to create space for part 2
+    } else if (group == '60'){
+      x <- seq(46,65,2) #plus 5 to create space for part 2
+    }
+    
+    
+    polygon(x = c(x, rev(x)), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x = x, y = na.omit(mid),col=col,lty=1)
+  }
+  
+  #add legend
+  legend(46,30,legend=c('30° target','60° target'),
+         col=c(colourscheme[['30']][['S']],colourscheme[['60']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+  
+  
+}
+
+#density plots -----
+plotPart2Density <- function(groups = c('30', '60')){
+  
+  for(group in groups){
+    dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE)
+
+    pdf(sprintf("data/mirrorgeneralization-master/doc/fig/%s_Part2Density.pdf", group))
+
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    triallist <- dat$trial
+    #triallist <- c(1:90)
+    #triallist <- c(1,2,90)
+    
+    if(group == '30'){
+      n <- triallist[seq(1,length(triallist),2)]
+      dat <- dat[which(dat$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == '60'){
+      n <- triallist[seq(2,length(triallist),2)]
+      dat <- dat[which(dat$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+      plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.3)
+      if(group == '30'){
+        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == '60'){
+        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    dev.off()
+    
+  }
+
+}
