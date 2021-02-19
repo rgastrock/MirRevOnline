@@ -1131,8 +1131,9 @@ plotDaysApart <- function(target='inline'){
   axis(1, at = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130))
   axis(2, at = c(0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45), las=2) #tick marks for y axis
   
-  #cat(sprintf('mean: %s days apart \n',mean(dat$days)))
-  #cat(sprintf('median: %s days apart \n',median(dat$days)))
+  cat(sprintf('mean: %s days apart \n',mean(dat$days)))
+  cat(sprintf('sd: %s days apart \n',sd(dat$days)))
+  cat(sprintf('median: %s days apart \n',median(dat$days)))
   
   #close everything if you saved plot as svg
   if (target=='svg') {
@@ -1558,26 +1559,107 @@ plotRetention <- function(groups = c('30', '60'), target='inline') {
 }
 
 #density plots -----
-plotPart2Density <- function(groups = c('30', '60')){
+plotPart2Density <- function(groups = c('far', 'near')){
   
   for(group in groups){
-    dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE)
+    data <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE)
 
-    pdf(sprintf("data/mirrorgeneralization-master/doc/fig/%s_Part2Density.pdf", group))
+    pdf(sprintf("data/mirrorgeneralization-master/doc/fig/Part2Density_%s.pdf", group))
 
     
     #current fix for summer data being non-randomized and not counterbalanced
-    triallist <- dat$trial
+    #triallist <- dat$trial
     #triallist <- c(1:90)
     #triallist <- c(1,2,90)
+    #triallist <- c(1:20)
     
-    if(group == '30'){
-      n <- triallist[seq(1,length(triallist),2)]
-      dat <- dat[which(dat$trial %in% n),]
+    if(group == 'far'){
+      n <- seq(1,20,2)
+      dat <- data[which(data$trial %in% n),]
       triallist <- dat$trial
-    } else if (group == '60'){
-      n <- triallist[seq(2,length(triallist),2)]
-      dat <- dat[which(dat$trial %in% n),]
+    } else if (group == 'near'){
+      n <- seq(2,20,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    #Quad 1
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    
+    #Quad4
+    if(group == 'far'){
+      n <- seq(22,40,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(21,40,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('330° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,-120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('300° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,-60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    
+    #Quad2
+    if(group == 'far'){
+      n <- seq(42,60,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(41,60,2)
+      dat <- data[which(data$trial %in% n),]
       triallist <- dat$trial
     }
     
@@ -1590,14 +1672,56 @@ plotPart2Density <- function(groups = c('30', '60')){
       #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
       #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
-      plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.3)
-      if(group == '30'){
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('150° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,-120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('120° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,-60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    
+    #Quad1 top up
+    if(group == 'far'){
+      n <- seq(61,80,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(62,80,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+     
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
         rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
         lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
-      } else if (group == '60'){
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
         rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
@@ -1607,6 +1731,87 @@ plotPart2Density <- function(groups = c('30', '60')){
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
     }
+    
+    #Quad1 switch hand
+    if(group == 'far'){
+      n <- seq(81,100,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(82,100,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+     
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target, switch hand: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target, switch hand: Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    
+    #Quad1 switch hand, washout
+    if(group == 'far'){
+      n <- seq(101,120,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(102,120,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 120, col = 8, lty = 2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle', shrink=1.3)
+        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #abline(v = 60, col = 8, lty = 2)
+      }
+      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
+      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
+    }
+    
     dev.off()
     
   }
