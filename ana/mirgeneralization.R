@@ -1112,6 +1112,8 @@ getMatchGroupDates <- function(){
   
   dat$days <- as.numeric(as.Date(dat$part2_date) - as.Date(dat$part1_date))
   
+  #dat[which(dat$days == 0),] #remove those who did it within a few hours
+  
   return(dat)
   
 }
@@ -1595,19 +1597,32 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
 
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
-        #abline(v = 120, col = 8, lty = 2)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
-        #abline(v = 60, col = 8, lty = 2)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1634,19 +1649,31 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
 
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('330° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,-120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('330° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('300° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,-60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('300° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 60, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1674,19 +1701,31 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
       
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('150° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,-120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('150° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('120° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,-60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('120° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 60, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1714,19 +1753,31 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
      
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 60, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1754,19 +1805,31 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
      
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('30° Target, switch hand: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('30° Target, switch hand: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('60° Target, switch hand: Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('60° Target, switch hand: Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 60, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1794,19 +1857,27 @@ plotPart2Density <- function(groups = c('far', 'near')){
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
 
       if(group == 'far'){
-        plot(distsubdat, main = sprintf('30° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('30° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 120, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation required'),
+               col='#00FF00',
+               lty=1,bty='n',cex=1)
       } else if (group == 'near'){
-        plot(distsubdat, main = sprintf('60° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle', shrink=1.3)
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('60° Target, switch hand (washout): Trial %s', triali), plot.type = 'circle',
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
         #abline(v = 60, col = 8, lty = 2)
+        legend(-1.5,-1.25,legend=c('no compensation required'),
+               col='#00FF00',
+               lty=1,bty='n',cex=1)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
