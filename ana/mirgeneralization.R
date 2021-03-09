@@ -1888,3 +1888,618 @@ plotPart2Density <- function(groups = c('far', 'near')){
   }
 
 }
+
+#Move throughs: identifying participant frequency and trials with move throughs----
+# we can indicate 1 = move through, 0 = no move through for all trials in generalization experiment
+getAllMoveThroughs <- function(){
+  
+  
+  datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
+  
+  
+  dataoutput<- data.frame() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/mirrorgeneralization-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    mdat <- handleOneFileCheck(filename = datafilename) #reuse function from su&fa2020online
+    # per target location, get reachdev for corresponding trials
+    
+    trial <- c(1:length(mdat$trialno))
+    ppreaches <- mdat$step1_samp #get reach deviations column from learning curve data
+    ppdat <- data.frame(trial, ppreaches)
+    
+    ppname <- unique(mdat$participant)
+    names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+    
+    if (prod(dim(dataoutput)) == 0){
+      dataoutput <- ppdat
+    } else {
+      dataoutput <- cbind(dataoutput, ppreaches)
+      names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+    }
+  }
+  
+  #return(dataoutput)
+  write.csv(dataoutput, file='data/mirrorgeneralization-master/data/processed/TrialMoveThroughs.csv', row.names = F)
+}
+
+getTotalMoveThroughs <- function(){
+  
+  
+  dat1 <- read.csv('data/mirrorgeneralization-master/data/processed/TrialMoveThroughs.csv', check.names = FALSE)
+  
+  #current fix for summer data being non-randomized and not counterbalanced
+  #triallist <- dat$trial
+  triallist <- c(1:120)
+  
+  trial <- c()
+  ppno <- c()
+  for(triali in triallist){
+    subdat1 <- dat1[which(dat1$trial == triali),]
+    subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+    ppthrough <- sum(subdat1[which(subdat1 == 1)])
+    
+    trial <- c(trial, triali)
+    ppno <- c(ppno, ppthrough)
+  }
+  ppmovethrough <- data.frame(trial,ppno)
+  
+  return(ppmovethrough)
+}
+
+plotTotalMoveThroughs <- function(target='inline'){
+  
+  
+  if (target=='svg') {
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig6_TotalMoveThroughs.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  data <- getTotalMoveThroughs()
+  barplot(data$ppno~data$trial, xlab = 'Trial', ylab = 'Frequency of Participants',
+          main = 'Participants with move throughs')#, axes = FALSE, #axisnames=FALSE,
+  #ylim = c(-1,61))
+  #axis(1, at = c(1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90))
+  #axis(2, at = c(0, 2, 4, 6, 8, 10, 20, 30, 60)) #tick marks for y axis
+  if(target=='svg'){
+    dev.off()
+  }
+  
+  
+}
+
+#Retention: move throughs----
+#first 20 trials can either be based on baseline corrected data from part 1 or not.
+#this section uses aligned portion of Part 1 for baseline corrected reach deviations.
+plotRetentionDensityMoveThroughs <- function(groups = c('30', '60')){
+  
+  # we can use the outputs of 30_Retention_Mirror.csv and corresponding 60 degree file for reachdevs
+  dat30 <- read.csv('data/mirrorgeneralization-master/data/processed/30_Retention_Mirror.csv', check.names = FALSE)
+  dat60 <- read.csv('data/mirrorgeneralization-master/data/processed/60_Retention_Mirror.csv', check.names = FALSE)
+  dats1 <- read.csv('data/mirrorgeneralization-master/data/processed/TrialMoveThroughs.csv', check.names = FALSE)
+  
+  for(group in groups){
+
+
+    pdf(sprintf("data/mirrorgeneralization-master/doc/fig/%s_RetentionDistbyStep1.pdf", group))
+    
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    #triallist <- dat$trial
+    triallist <- c(1:20)
+    
+    
+    if(group == '30'){
+      n <- triallist[seq(1,length(triallist),2)]
+      dat <- dat30[which(dat30$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == '60'){
+      n <- triallist[seq(2,length(triallist),2)]
+      dat <- dat60[which(dat60$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+
+      if(group == '30'){
+        plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+        
+      } else if (group == '60'){
+        plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+    }
+    dev.off()
+    
+  }
+}
+#compare these plots with fig 5_retention
+#it seems like exploration does not necessarily split participants into reaching towards the correct direction or not (unlike fall)
+#so retention in fig 5 is likely true retention, but this does not explain why they start off higher (i.e. compensate even more)
+
+
+#Generalization: move throughs----
+# this contains move through density plots for all trials in generalization
+# first 20 trials is not baseline corrected (because taken as a group, this all occured in part 2)
+
+plotDensityMoveThroughs <- function(groups = c('far', 'near')){
+  
+  for(group in groups){
+    data <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE)
+    dats1 <- read.csv('data/mirrorgeneralization-master/data/processed/TrialMoveThroughs.csv', check.names = FALSE)
+    
+    pdf(sprintf("data/mirrorgeneralization-master/doc/fig/%s_DistbyStep1.pdf", group))
+    
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    #triallist <- dat$trial
+    #triallist <- c(1:90)
+    #triallist <- c(1,2,90)
+    #triallist <- c(1:20)
+    
+    if(group == 'far'){
+      n <- seq(1,20,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(2,20,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    #Quad 1
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+        
+        
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    #Quad4
+    if(group == 'far'){
+      n <- seq(22,40,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(21,40,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('330° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('300° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    #Quad2
+    if(group == 'far'){
+      n <- seq(42,60,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(41,60,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('150° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('120° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    #Quad1 top up
+    if(group == 'far'){
+      n <- seq(61,80,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(62,80,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    #Quad1 switch hand
+    if(group == 'far'){
+      n <- seq(81,100,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(82,100,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target, Switch hand: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target, Switch hand: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    #Quad1 switch hand, washout
+    if(group == 'far'){
+      n <- seq(101,120,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == 'near'){
+      n <- seq(102,120,2)
+      dat <- data[which(data$trial %in% n),]
+      triallist <- dat$trial
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,3:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      subdat1 <- dats1[which(dats1$trial == triali),]
+      subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+      subdatall <- data.frame(subdat1, subdat)
+      
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('30° Target, Switch hand (washout): Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation required', 'with exploration', 'withoutexploration'),
+               col=c('#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('60° Target, Switch hand (washout): Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
+        
+        movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+        movethrough <- movethrough$subdat
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        
+        nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+        nonthrough <- nonthrough$subdat
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        
+        legend(-1.75,-1.25,legend=c('no compensation required', 'with exploration', 'withoutexploration'),
+               col=c('#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
+      }
+
+    }
+    
+    dev.off()
+    
+  }
+  
+}
+
+#it seems like exploration does not necessarily split participants into reaching towards the correct direction or not (unlike fall)
+#move throughs are really only existent on trial 1, and first trial after switching hands
+#this might show that transfer across target locations seems to be more generalization than fast learning (because without exploration,
+# the reaches produce a mean deviation in expected direction)
+#Participants with move throughs for hand switching is more distributed (both correct and incorrect sides). This might
+# show that there is transfer, because exploration of workspace does not necessarily correspond to correct reaches immediately.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
