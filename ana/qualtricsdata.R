@@ -151,20 +151,23 @@ getQualtricsData <- function(set){
 
 
 # Mouse VS Trackpad: Learning ----
+#device is either 'Mouse' or 'Trackpad'
 getDeviceLC <- function(group, set, device){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Which.of.the.following.devices.are.you.using.to.control.the.cursor.during.this.experiment....Selected.Choice == device),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q15 == device),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   }
-  dat <- getGroupCircularLC(group = group, set = set)
+  #dat <- getGroupCircularLC(group = group, set = set) #replace with saved dat 
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -210,17 +213,19 @@ getDeviceLCConfInt <- function(groups = c('30','60'), set, device){
 getDeviceAligned <- function(group, set, device){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Which.of.the.following.devices.are.you.using.to.control.the.cursor.during.this.experiment....Selected.Choice == device),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q15 == device),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
   }
-  dat <- removeOutlierAlignedReaches(group = group, set = set)
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -281,17 +286,19 @@ getDeviceAlignedConfInt <- function(groups = c('30','60'), set, device){
 getDeviceRAE <- function(group, set, device){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Which.of.the.following.devices.are.you.using.to.control.the.cursor.during.this.experiment....Selected.Choice == device),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q15 == device),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
   }
-  dat <- getGroupCircularRAE(group = group, set = set)
+  #dat <- getGroupCircularRAE(group = group, set = set)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -340,7 +347,7 @@ plotDeviceAllTasks <- function(groups = c('30', '60'), devices = c('Mouse','Trac
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig14_%s_DeviceAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig12_%s_DeviceAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -430,7 +437,7 @@ plotDeviceAllTasksSU <- function(groups = c('30', '60'), devices = c('Mouse','Tr
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig14_%s_DeviceAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig12_%s_DeviceAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -540,17 +547,19 @@ plotDeviceAllTasksSU <- function(groups = c('30', '60'), devices = c('Mouse','Tr
 getDeviceMT <- function(group, set, device){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Which.of.the.following.devices.are.you.using.to.control.the.cursor.during.this.experiment....Selected.Choice == device),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step2_MovementTime.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q15 == device),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_MovementTime.csv',group), check.names = FALSE)
   }
-  dat <- getGroupAllTasksMT(group = group, set = set, step = 2)
+  #dat <- getGroupAllTasksMT(group = group, set = set, step = 2)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -617,7 +626,7 @@ plotDeviceMT <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad')
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig15_%s_DeviceMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig13_%s_DeviceMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -710,7 +719,7 @@ plotDeviceMTSU <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig15_%s_DeviceMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig13_%s_DeviceMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -822,17 +831,19 @@ plotDeviceMTSU <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad
 getDevicePL <- function(group, set, device){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Which.of.the.following.devices.are.you.using.to.control.the.cursor.during.this.experiment....Selected.Choice == device),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step2_PathLength.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q15 == device),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_PathLength.csv',group), check.names = FALSE)
   }
-  dat <- getGroupAllTasksPathLength(group = group, set = set, step = 2)
+  #dat <- getGroupAllTasksPathLength(group = group, set = set, step = 2)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -899,7 +910,7 @@ plotDevicePL <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad')
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig16_%s_DevicePL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig14_%s_DevicePL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -992,7 +1003,7 @@ plotDevicePLSU <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig16_%s_DevicePL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig14_%s_DevicePL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1101,20 +1112,23 @@ plotDevicePLSU <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad
 }
 
 # Biological Sex: Learning----
+#sex is 'Male' or 'Female'
 getSexLC <- function(group, set, sex){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Sex....Selected.Choice == sex),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q6 == sex),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   }
-  dat <- getGroupCircularLC(group = group, set = set)
+  #dat <- getGroupCircularLC(group = group, set = set)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -1160,17 +1174,19 @@ getSexLCConfInt <- function(groups = c('30','60'), set, sex){
 getSexAligned <- function(group, set, sex){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Sex....Selected.Choice == sex),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q6 == sex),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
   }
-  dat <- removeOutlierAlignedReaches(group = group, set = set)
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -1231,17 +1247,19 @@ getSexAlignedConfInt <- function(groups = c('30','60'), set, sex){
 getSexRAE <- function(group, set, sex){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Sex....Selected.Choice == sex),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q6 == sex),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
   }
-  dat <- getGroupCircularRAE(group = group, set = set)
+  #dat <- getGroupCircularRAE(group = group, set = set)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -1290,7 +1308,7 @@ plotSexAllTasks <- function(groups = c('30', '60'), sexes = c('Male','Female'), 
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig17_%s_SexAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig15_%s_SexAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1380,7 +1398,7 @@ plotSexAllTasksSU <- function(groups = c('30', '60'), sexes = c('Male','Female')
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig17_%s_SexAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig15_%s_SexAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1490,17 +1508,19 @@ plotSexAllTasksSU <- function(groups = c('30', '60'), sexes = c('Male','Female')
 getSexMT <- function(group, set, sex){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Sex....Selected.Choice == sex),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q6 == sex),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step2_MovementTime.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_MovementTime.csv', group), check.names = FALSE)
   }
-  dat <- getGroupAllTasksMT(group = group, set = set, step = 2)
+  #dat <- getGroupAllTasksMT(group = group, set = set, step = 2)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -1567,7 +1587,7 @@ plotSexMT <- function(groups = c('30', '60'), sexes = c('Male','Female'), target
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig18_%s_SexMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig16_%s_SexMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1660,7 +1680,7 @@ plotSexMTSU <- function(groups = c('30', '60'), sexes = c('Male','Female'), targ
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig18_%s_SexMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig16_%s_SexMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1772,17 +1792,19 @@ plotSexMTSU <- function(groups = c('30', '60'), sexes = c('Male','Female'), targ
 getSexPL <- function(group, set, sex){
   
   if(set == 'su2020'){
-    qualtdat <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mReversalNewAlpha3-master/qualtrics/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
-    devqualt <- qualtdat[which(qualtdat$Sex....Selected.Choice == sex),]
-    ppqualt <- devqualt$Please.enter.your.URPP.number.
+    devqualt <- qualtdat[which(qualtdat$Q6 == sex),]
+    ppqualt <- devqualt$Q1
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step2_PathLength.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   } else if (set == 'fa2020'){
-    qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
     #then get pplist according to device
     devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
     ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_PathLength.csv', group), check.names = FALSE)
   }
-  dat <- getGroupAllTasksPathLength(group = group, set = set, step = 2)
+  #dat <- getGroupAllTasksPathLength(group = group, set = set, step = 2)
   
   #keep only data of pp from this list
   trial <- dat$trial
@@ -1849,7 +1871,7 @@ plotSexPL <- function(groups = c('30', '60'), sexes = c('Male','Female'), target
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig19_%s_SexPL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig17_%s_SexPL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
@@ -1942,7 +1964,7 @@ plotSexPLSU <- function(groups = c('30', '60'), sexes = c('Male','Female'), targ
   for (group in groups){
     #but we can save plot as svg file
     if (target=='svg'){
-      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig19_%s_SexPL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig17_%s_SexPL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
     }
     
     # create plot
