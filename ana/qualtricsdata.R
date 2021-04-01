@@ -70,6 +70,38 @@ getSUWithoutQualtrics <- function(){
   
 }
 
+getPart2WithoutQualtrics <- function(){
+  
+  #participant list from behavioral data
+  
+  datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
+  
+  
+  
+  dataoutput<- c() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/mirrorgeneralization-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- handleOneFile(filename = datafilename)
+    ppname <- unique(adat$participant)
+    
+    dataoutput <- c(dataoutput, ppname)
+  }
+  
+  #read in Qualtrics sheet
+  qualt <- read.csv('data/mirrorgeneralization-master/qualtrics/Canbyork-Fall2020-Part+#2-FINAL_March+29,+2021_12.20.csv', stringsAsFactors = F)
+  #find which of our dataoutput (pp with data) have qualtrics data as well
+  ppqualt <- qualt$id[-c(1:2)]
+  pp_no_qualt <- dataoutput[which(dataoutput %in% ppqualt == FALSE)]
+  
+  
+  return(pp_no_qualt)
+  #function returns nothing if all data we have also have corresponding Qualtrics data
+}
+
 #Function below will generate a new csv file of Qualtrics data that contains only participants that also have experimental data
 getQualtricsData <- function(set){
   if(set=='su2020'){
@@ -145,6 +177,43 @@ getQualtricsData <- function(set){
     row1qualt <- qualt[1,]
     alldat <- rbind(row1qualt, ndataoutput)
     write.csv(alldat, file='data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', row.names = F)
+    
+  } else if (set=='part2'){
+    datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
+    
+    
+    
+    dataoutput<- c() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      
+      datafilename <- sprintf('data/mirrorgeneralization-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      adat <- handleOneFile(filename = datafilename)
+      ppname <- unique(adat$participant)
+      
+      dataoutput <- c(dataoutput, ppname)
+    }
+    
+    qualt <- read.csv('data/mirrorgeneralization-master/qualtrics/Canbyork-Fall2020-Part+#2-FINAL_March+29,+2021_12.20.csv', stringsAsFactors = F)
+    
+    ndataoutput <- data.frame()
+    for (pp in dataoutput){
+      if(pp %in% qualt$id){
+        ndat <- qualt[which(qualt$id == pp),]
+      }
+      
+      if (prod(dim(ndataoutput)) == 0){
+        ndataoutput <- ndat
+      } else {
+        ndataoutput <- rbind(ndataoutput, ndat)
+      }
+    }
+    
+    row1qualt <- qualt[1,]
+    alldat <- rbind(row1qualt, ndataoutput)
+    write.csv(alldat, file='data/mirrorgeneralization-master/qualtrics/Part2_Qualtrics_ParticipantList.csv', row.names = F)
     
   }
 }

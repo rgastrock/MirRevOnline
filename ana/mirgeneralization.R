@@ -14,10 +14,10 @@ source('ana/qualtricsdata.R')
 # pre-processing----
 # Use only data from people who also did the Non-instructed experiment during Fall 2020 (Part 1)
 getNoPartOneParticipants <- function(){
-  
+  #This function states participants who have NO part 1 data, returns null if all data in part 2 also have part 1
   #get list of id's from Fall data
-  qualtdat <- read.csv('data/mirrorreversal-fall/data/processed/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
-  ppqualt <- qualtdat$id[-c(1:2)]
+  qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  ppqualt <- qualtdat$id[-c(1)]
   
   #get all filenames in generalizaton data
   datafilenames <- list.files('data/mirrorgeneralization-master/data', pattern = '*.csv')
