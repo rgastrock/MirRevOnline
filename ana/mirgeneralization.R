@@ -156,7 +156,7 @@ plotLearningGen <- function(groups = c('far', 'near'), target='inline') {
   
   #but we can save plot as svg file
   if (target=='svg') {
-    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig1_LearningGen.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig1A_LearningGen.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
   # create plot
@@ -332,7 +332,7 @@ plotLearningGenSignFlip <- function(groups = c('far', 'near'), target='inline') 
   
   #but we can save plot as svg file
   if (target=='svg') {
-    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig1_LearningGenSignFlip.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/mirrorgeneralization-master/doc/fig/Fig1_LearningGen.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
   # create plot

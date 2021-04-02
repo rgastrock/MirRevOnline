@@ -3259,19 +3259,19 @@ getGroupAllTasksPathLength <- function(group, set, step){
     }
   }
   
-  # for (trialno in dataoutput$trial){
-  #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-  #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-  #   #print(max(ndat, na.rm=T))
-  #   trialmu <- mean(ndat, na.rm = TRUE)
-  #   trialsigma <- sd(ndat, na.rm = TRUE)
-  #   #print(trialsigma)
-  #   trialclip <- abs(trialmu) + (trialsigma * 2)
-  #   
-  #   ndat[which(abs(ndat) > trialclip)] <- NA
-  #   
-  #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-  # }
+  for (trialno in dataoutput$trial){
+    #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+    ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+    #print(max(ndat, na.rm=T))
+    trialmu <- mean(ndat, na.rm = TRUE)
+    trialsigma <- sd(ndat, na.rm = TRUE)
+    #print(trialsigma)
+    trialclip <- abs(trialmu) + (trialsigma * 2)
+
+    ndat[which(abs(ndat) > trialclip)] <- NA
+
+    dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+  }
   
   #return(dataoutput)
   if (set == 'su2020'){
@@ -3288,7 +3288,7 @@ getGroupAllTasksPathLength <- function(group, set, step){
   #names(which(colSums(is.na(dataoutput))>0))
 }
 
-getGroupAllTasksPathLengthConfInt <- function(groups = c('30','60'), type = 't', set, step){
+getGroupAllTasksPathLengthConfInt <- function(groups = c('30','60'), type = 't', set=2, step){
   for(group in groups){
     #data <- getGroupAllTasksPathLength(group = group, set = set, step = step)
     if (set == 'su2020'){
