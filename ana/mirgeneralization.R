@@ -340,7 +340,7 @@ plotLearningGenSignFlip <- function(groups = c('far', 'near'), target='inline') 
   
   #NA to create empty plot
   # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(0,121), ylim = c(-10,160), 
+  plot(NA, NA, xlim = c(0,121), ylim = c(-20,150), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
        main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   lim <- par('usr')
@@ -366,7 +366,7 @@ plotLearningGenSignFlip <- function(groups = c('far', 'near'), target='inline') 
   
   axis(1, at = c(1, 21, 41, 61, 81, 101, 120)) #tick marks for x axis
   axis(3, at = c(10, 30, 50, 70, 90, 110), labels = c('30°/60°', '300°/330°', '120°/150°', '30°/60°', '30°/60°', '30°/60°'), line = -2, tick = FALSE) #tick marks for x axis
-  axis(2, at = c(0, 30, 60, 90, 120, 150), las = 2) #tick marks for y axis
+  axis(2, at = c(-15, 0, 15, 30, 60, 90, 120), las = 2) #tick marks for y axis
   
   
   #read in CI file
@@ -2482,8 +2482,63 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
 #Participants with move throughs for hand switching is more distributed (both correct and incorrect sides). This might
 # show that there is transfer, because exploration of workspace does not necessarily correspond to correct reaches immediately.
 
-
-
+# function below just does the same thing but only for first trial and first trial after switching hands
+plotTrialOneDensityMoveThroughs <- function(target='inline', trials = c(1, 81)){
+  for (triali in trials){
+    if (target=='svg'){
+      svglite(file=sprintf('data/mirrorgeneralization-master/doc/fig/Fig7_Trial%s_DistributionbyStep1.svg', triali), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    data <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE)
+    dats1 <- read.csv('data/mirrorgeneralization-master/data/processed/TrialMoveThroughs.csv', check.names = FALSE)
+    
+    
+    
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    #triallist <- dat$trial
+    #triallist <- c(1:90)
+    #triallist <- c(1,2,90)
+    #triallist <- c(1,81)
+    
+    
+    subdat <- data[which(data$trial == triali),]
+    subdat <- as.numeric(subdat[,3:ncol(subdat)])
+    subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+    subdat1 <- dats1[which(dats1$trial == triali),]
+    subdat1 <- as.numeric(subdat1[,2:ncol(subdat1)])
+    subdatall <- data.frame(subdat1, subdat)
+    
+    distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+    
+    
+    plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+         shrink=1.5, col= '#A9A9A9ff')
+    
+    nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+    perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+    arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+    arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+    
+    movethrough <- subdatall[which(subdatall$subdat1 == 1),]
+    movethrough <- movethrough$subdat
+    points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+    
+    nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
+    nonthrough <- nonthrough$subdat
+    points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+    
+    legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+           col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+           lty=1,bty='n',cex=1, ncol=2)
+    
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+  }
+}
 
 
 

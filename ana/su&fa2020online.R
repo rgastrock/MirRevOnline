@@ -1412,12 +1412,14 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
       
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       #prefer the plot to have a small circle, and emphasize the density
-      Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-      Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-      plot(Xsub, Ysub, main = sprintf('%s° target: Mirror trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
       if(group == '30'){
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = '#A9A9A9ff')
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
@@ -1425,18 +1427,21 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .05)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
         
-        lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=.85)
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
         
-        legend(-1.25,-0.95,legend=c('with exploration','without exploration'),
-               col=c('#ff8200ff','#c400c4ff'),
-               pch=1,bty='n',cex=1)
         
-        #abline(v = 120, col = 8, lty = 2)
       } else if (group == '60'){
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = '#A9A9A9ff')
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff')
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
@@ -1444,18 +1449,12 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .05)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
         
-        lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=.85)
-        
-        legend(-1.25,-0.95,legend=c('with exploration','without exploration'),
-               col=c('#ff8200ff','#c400c4ff'),
-               pch=1,bty='n',cex=1)
-        
-        #abline(v = 60, col = 8, lty = 2)
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
       }
-      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
-      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
     }
     #close everything if you saved plot as svg
     if (target=='svg') {
