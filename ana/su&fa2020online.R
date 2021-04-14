@@ -1014,22 +1014,36 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
       #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
       #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
       #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
-      plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.3)
+      #plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.3)
       if(group == '30'){
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
-        #abline(v = 120, col = 8, lty = 2)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       } else if (group == '60'){
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = 'red')
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
-        lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.3)
-        #abline(v = 60, col = 8, lty = 2)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
-      # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
-      # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
     }
     dev.off()
     
@@ -1315,48 +1329,53 @@ plotCheckGroupCircFreq <- function(groups = c('30', '60'), set){
       subdatall <- data.frame(subdat1, subdat)
       
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
-      #prefer the plot to have a small circle, and emphasize the density
-      Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-      Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-      plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+
       if(group == '30'){
-        rd <- as.circular(c(0,120), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = '#696969')
+        #tcl, pos and neg values are for each label
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#e51636ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#005de4ff', next.points = .05)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
-        lines(distsubdat, points.plot=FALSE, col='#696969', shrink=.85)
-        
-        legend(-1.25,-0.95,legend=c('with move throughs','without move throughs'),
-               col=c('#e51636ff','#005de4ff'),
-               pch=1,bty='n',cex=1)
-        
-        #abline(v = 120, col = 8, lty = 2)
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
       } else if (group == '60'){
-        rd <- as.circular(c(0,60), type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        points.circular(rd, pch = 15, col = '#696969')
+        #tcl, pos and neg values are for each label
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
+        
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#e51636ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#005de4ff', next.points = .05)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
-        lines(distsubdat, points.plot=FALSE, col='#696969', shrink=.85)
-        
-        legend(-1.25,-0.95,legend=c('with move throughs','without move throughs'),
-               col=c('#e51636ff','#005de4ff'),
-               pch=1,bty='n',cex=1)
-        
-        #abline(v = 60, col = 8, lty = 2)
+        legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
+               col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
+               lty=1,bty='n',cex=1, ncol=2)
       }
       # axis(1, at = c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 330, 300, 360))
       # axis(2, at = c(0, 0.2, 0.4, 0.6, 0.8, 1))
@@ -1411,10 +1430,11 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
       subdatall <- data.frame(subdat1, subdat)
       
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
-      #prefer the plot to have a small circle, and emphasize the density
       if(group == '30'){
         plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -1423,11 +1443,11 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -1436,7 +1456,9 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
         
       } else if (group == '60'){
         plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -1445,11 +1467,11 @@ plotTrialOneCheckGroupCircFreq <- function(groups = c('30', '60'), target='inlin
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),

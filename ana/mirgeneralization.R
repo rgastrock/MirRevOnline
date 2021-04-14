@@ -2013,8 +2013,11 @@ plotRetentionDensityMoveThroughs <- function(groups = c('30', '60')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
 
       if(group == '30'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2023,19 +2026,22 @@ plotRetentionDensityMoveThroughs <- function(groups = c('30', '60')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
         
       } else if (group == '60'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2044,11 +2050,11 @@ plotRetentionDensityMoveThroughs <- function(groups = c('30', '60')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2105,8 +2111,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2115,11 +2124,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2127,8 +2136,12 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         
       } else if (group == 'near'){
+        
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2137,11 +2150,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2171,8 +2184,12 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('330° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2181,18 +2198,22 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
       } else if (group == 'near'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('300° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2201,11 +2222,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2236,8 +2257,12 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('150° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(-120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2246,18 +2271,22 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
       } else if (group == 'near'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('120° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(-60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2266,11 +2295,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2301,8 +2330,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2311,18 +2343,22 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
       } else if (group == 'near'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2331,11 +2367,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2366,8 +2402,12 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('30° Target, Switch hand: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2376,18 +2416,21 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
       } else if (group == 'near'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('60° Target, Switch hand: Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2396,11 +2439,11 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
                col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2431,36 +2474,42 @@ plotDensityMoveThroughs <- function(groups = c('far', 'near')){
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       
       if(group == 'far'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('30° Target, Switch hand (washout): Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation required', 'with exploration', 'withoutexploration'),
                col=c('#00FF00', '#ff8200ff', '#c400c4ff'),
                lty=1,bty='n',cex=1, ncol=2)
       } else if (group == 'near'){
+        #tcl, pos and neg values are for each label
         plot(distsubdat, main = sprintf('60° Target, Switch hand (washout): Trial %s', triali), plot.type = 'circle', 
-             shrink=1.5, col= '#A9A9A9ff')
+             shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+        dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+        polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
         
         nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
         arrows.circular(nocomp, length = 0, angle = 0, col = '#00FF00')
         
         movethrough <- subdatall[which(subdatall$subdat1 == 1),]
         movethrough <- movethrough$subdat
-        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+        points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075)
         
         nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
         nonthrough <- nonthrough$subdat
-        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+        points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025)
         
         legend(-1.75,-1.25,legend=c('no compensation required', 'with exploration', 'withoutexploration'),
                col=c('#00FF00', '#ff8200ff', '#c400c4ff'),
@@ -2511,9 +2560,11 @@ plotTrialOneDensityMoveThroughs <- function(target='inline', trials = c(1, 81)){
     
     distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
     
-    
+    #tcl, pos and neg values are for each label
     plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
-         shrink=1.5, col= '#A9A9A9ff')
+         shrink=1.5, col= '#A9A9A9ff', tcl.text = 0.25) 
+    dencurve <- lines(distsubdat, points.plot=FALSE, col='#A9A9A9ff', shrink=1.5)
+    polygon(dencurve$x, dencurve$y, col = alpha('#A9A9A92f', 0.10), border = NA)
     
     nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -2522,11 +2573,11 @@ plotTrialOneDensityMoveThroughs <- function(target='inline', trials = c(1, 81)){
     
     movethrough <- subdatall[which(subdatall$subdat1 == 1),]
     movethrough <- movethrough$subdat
-    points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = .025)
+    points.circular(movethrough, pch = 1, col = '#ff8200ff', next.points = -.075) #+.025
     
     nonthrough <- subdatall[which(subdatall$subdat1 == 0),]
     nonthrough <- nonthrough$subdat
-    points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = .075)
+    points.circular(nonthrough, pch = 1, col = '#c400c4ff', next.points = -.025) #.075
     
     legend(-1.75,-1.25,legend=c('no compensation','perfect compensation', 'with exploration', 'withoutexploration'),
            col=c('#FF0000','#00FF00', '#ff8200ff', '#c400c4ff'),
