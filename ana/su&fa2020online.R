@@ -2364,7 +2364,7 @@ handleOneMTFile <- function(filename, step) {
     t <- convertCellToNumVector(df$trialMouse.time[trialnum])
     
     # remove stuff that is not step==2
-    stepidx = which(s == step)
+    stepidx <- which(s == step)
     t <- t[stepidx]
     startt <- t[1]
     endt <- t[length(t)]
@@ -2447,8 +2447,10 @@ getGroupAllTasksMT <- function(group, set, step){
   
   #return(dataoutput)
   if (set == 'su2020'){
+    #write.csv(dataoutput, file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step%s_MovementTime_UNCORRECTED.csv',group,step), row.names = F)
     write.csv(dataoutput, file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step%s_MovementTime.csv',group,step), row.names = F)
   } else if (set == 'fa2020'){
+    #write.csv(dataoutput, file=sprintf('data/mirrorreversal-fall/data/processed/%s_step%s_MovementTime_UNCORRECTED.csv', group,step), row.names = F)
     write.csv(dataoutput, file=sprintf('data/mirrorreversal-fall/data/processed/%s_step%s_MovementTime.csv', group,step), row.names = F)
   }
   
@@ -2778,6 +2780,7 @@ getGroupRDMT <- function(group, set){
   
 }
 
+
 #Note: SU2020 will only have 30 deg target as first trial in mirror phase
 plotGroupRDMT <- function(group, target='inline', set) {
   
@@ -2797,17 +2800,98 @@ plotGroupRDMT <- function(group, target='inline', set) {
   } else if (set == 'fa2020'){
     dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDMT.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   }
-  #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-  if(group == '60'){
-    dat <- dat[-which(dat$participant == '216814'),]
-  }
+  # #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
+  # if(group == '60'){
+  #   dat <- dat[-which(dat$participant == '216814'),]
+  # }
   
   #NA to create empty plot
   # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(-1,26), ylim=c(-5,190),
+  plot(NA, NA, xlim = c(-1,30), ylim=c(-10,200),
        xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
        main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
-  axis(1, at = c(0, 5, 10, 15, 20, 25)) #tick marks for x axis
+  axis(1, at = c(0, 5, 10, 15, 20, 25, 30)) #tick marks for x axis
+  axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
+  time <- dat$time
+  #circrd <- dat$circ_rd
+  circrd <- as.numeric(abs(dat$circ_rd)) #take absolute value, then we can consider values as numeric
+  #circrd <- as.circular(circrd, type='angles', units='degrees', template='none', modulo='asis', zero=0, rotation='counter')
+  points(time,circrd)
+  mod1 <- lm(circrd ~ time)
+  
+  reglinex <- seq(range(time, na.rm = TRUE)[1],range(time, na.rm = TRUE)[2],.1)
+  abX <- range(reglinex)
+  abY <- abX * mod1$coefficients[2] + mod1$coefficients[1]
+  lines(abX, abY, col='#343434')
+  
+  print(summary(mod1))
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+}
+
+# we can also run the same analyses but with outlier removal for long movement times
+getGroupRDMTOutlierRemoved <- function(groups = c('30', '60'), set){
+  for (group in groups){
+    if (set == 'su2020'){
+      ppall <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDMT.csv',group), check.names = FALSE) #summer data always has 30 deg as first trial
+    } else if (set == 'fa2020'){
+      ppall <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDMT.csv',group), check.names = FALSE)    
+    }
+    
+    trialmu <- mean(ppall$time, na.rm = TRUE)
+    trialsigma <- sd(ppall$time, na.rm = TRUE)
+    trialclip <- abs(trialmu) + (trialsigma * 2)
+    
+    ppremoved <- ppall$time[which(abs(ppall$time) > trialclip)]
+    ppremoved <- length(ppremoved)
+    print(ppremoved)
+    
+    ppall$time[which(abs(ppall$time) > trialclip)] <- NA
+    ppall$circ_rd[which(is.na(ppall$time))] <- NA 
+    
+    #return(ppall)
+    if (set == 'su2020'){
+      write.csv(ppall, file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDMT_OutlierRemoved.csv',group), row.names = F)
+    } else if (set == 'fa2020'){
+      write.csv(ppall, file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDMT_OutlierRemoved.csv', group), row.names = F)
+    }
+    
+  }
+  
+  
+}
+
+#Note: SU2020 will only have 30 deg target as first trial in mirror phase
+plotGroupRDMTOutlierRemoved <- function(group, target='inline', set) {
+  
+  
+  #but we can save plot as svg file
+  if (target=='svg' & set == 'su2020') {
+    svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig5A_RDMT_%s_OutlierRemoved.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  } else if (target=='svg' & set == 'fa2020'){
+    svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig5A_RDMT_%s_OutlierRemoved.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  # create plot
+  #meanGroupReaches <- list() #empty list so that it plots the means last
+  #dat <- getGroupRDMT(group=group, set = set)
+  if (set == 'su2020'){
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDMT_OutlierRemoved.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  } else if (set == 'fa2020'){
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDMT_OutlierRemoved.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  }
+
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(-1,30), ylim=c(-10,200),
+       xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
+       main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+  axis(1, at = c(0, 5, 10, 15, 20, 25, 30)) #tick marks for x axis
   axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
   time <- dat$time
   #circrd <- dat$circ_rd
@@ -3127,14 +3211,14 @@ plotMoveThroughGroupRDMT <- function(group, moves = c('0', '1'), target='inline'
     # create plot
     #meanGroupReaches <- list() #empty list so that it plots the means last
     dat <- getMoveThroughGroupRDMT(group=group, set = set, moved=move)
-    #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-    if (group == '60' & move == '1'){
-      dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
-    }
+    # #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
+    # if (group == '60' & move == '1'){
+    #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    # }
     
     #NA to create empty plot
     # could maybe use plot.new() ?
-    plot(NA, NA, xlim = c(-1,26), ylim=c(-5,190),
+    plot(NA, NA, xlim = c(-1,30), ylim=c(-10,200),
          xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
          main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
     axis(1, at = c(0, 5, 10, 15, 20, 25)) #tick marks for x axis
@@ -3165,6 +3249,145 @@ plotMoveThroughGroupRDMT <- function(group, moves = c('0', '1'), target='inline'
   }
   
   
+}
+
+#repeat but with outliers removed
+getMoveThroughGroupRDMTOutlierRemoved <- function(group, set, moved){
+  
+  #ppall <- getTrialOneParticipantsWMoveThrough(group=group, set=set)
+  if (set == 'su2020'){
+    ppall <- read.csv(file='data/mReversalNewAlpha3-master/data/processed/30_TrialOnePPMoveThrough.csv', check.names = FALSE) #summer data always has 30 deg as first trial
+  } else if (set == 'fa2020'){
+    ppall <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_TrialOnePPMoveThrough.csv', group), check.names = FALSE)    
+  }
+  pplist <- ppall[which(ppall$movethrough == moved),] #moved is 1 if movethrough, 0 if not
+  pplist <- pplist$participant
+  
+  #dat <- getGroupRDMT(group=group, set=set)
+  if (set == 'su2020'){
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDMT_OutlierRemoved.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  } else if (set == 'fa2020'){
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDMT_OutlierRemoved.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  }
+  
+  # get only participants specified in list
+  data <- dat[which(dat$participant %in% pplist),]
+  
+  return(data)
+}
+
+#NOTE: SU2020 will only be for 30 deg target
+plotMoveThroughGroupRDMTOutlierRemoved <- function(group, moves = c('0', '1'), target='inline', set) {
+  
+  for(move in moves){
+    #but we can save plot as svg file
+    if (target=='svg' & set == 'su2020') {
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig7A_%s_%s_MoveThrough_RDMT_OutlierRemoved.svg', group, move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    } else if (target=='svg' & set == 'fa2020'){
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig7A_%s_%s_MoveThrough_RDMT_OutlierRemoved.svg', group, move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    dat <- getMoveThroughGroupRDMT(group=group, set = set, moved=move)
+    # #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
+    # if (group == '60' & move == '1'){
+    #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    # }
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(-1,30), ylim=c(-10,200),
+         xlab = 'Movement Time, Step 1', ylab = "Circular Reach deviation, Step 2",
+         main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+    axis(1, at = c(0, 5, 10, 15, 20, 25)) #tick marks for x axis
+    axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
+    time <- dat$time
+    #circrd <- dat$circ_rd
+    circrd <- as.numeric(abs(dat$circ_rd)) #take absolute value, then we can consider values as numeric
+    #ndat <- data.frame(time, circrd)
+    #ndat <- ndat[which(ndat$circrd > 90),]
+    #circrd <- as.circular(circrd, type='angles', units='degrees', template='none', modulo='asis', zero=0, rotation='counter')
+    #points(ndat$time,ndat$circrd)
+    #mod1 <- lm(ndat$circrd ~ ndat$time)
+    
+    points(time,circrd)
+    mod1 <- lm(circrd ~ time)
+    
+    reglinex <- seq(range(time, na.rm = TRUE)[1],range(time, na.rm = TRUE)[2],.1)
+    abX <- range(reglinex)
+    abY <- abX * mod1$coefficients[2] + mod1$coefficients[1]
+    lines(abX, abY, col='#343434')
+    
+    print(summary(mod1))
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+  }
+  
+  
+}
+
+#function below calculates the mean movement time in step 1, for a sense of how long in seconds exploration was
+#we divide it into before and after outlier removal
+
+getTotalMTMoveThroughStep1 <- function(groups=c('30','60'), set, moved = 1){
+  dataoutput <- data.frame()
+  for (group in groups){
+    if (set == 'su2020'){
+      ppall <- read.csv(file='data/mReversalNewAlpha3-master/data/processed/30_TrialOnePPMoveThrough.csv', check.names = FALSE) #summer data always has 30 deg as first trial
+    } else if (set == 'fa2020'){
+      ppall <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_TrialOnePPMoveThrough.csv', group), check.names = FALSE)    
+    }
+    pplist <- ppall[which(ppall$movethrough == moved),] #moved is 1 if movethrough, 0 if not
+    pplist <- pplist$participant
+    
+    #dat <- getGroupAllTasksMT(group=group, set=set, step=1) #step 1, but can do other steps as well
+    if (set == 'su2020'){
+      dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step1_MovementTime.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
+      dat1 <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_step1_MovementTime_UNCORRECTED.csv',group), check.names = FALSE)
+    } else if (set == 'fa2020'){
+      dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step1_MovementTime.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+      dat1 <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step1_MovementTime_UNCORRECTED.csv',group), check.names = FALSE)
+    }
+    
+    trial <- dat$trial
+    # get only participants specified in list
+    data <- dat[,which(colnames(dat) %in% pplist)]
+    data <- cbind(trial, data)
+    
+    data <- data[which(data$trial == 21), ]
+    subdata <- as.numeric(data[,2:ncol(data)])
+    
+    pptotal <- length(subdata)
+    ppremoved <- sum(is.na(subdata))
+    
+    OutlierRemoved_Mean <- mean(subdata, na.rm = TRUE)
+    OutlierRemoved_SD <- sd(subdata, na.rm = TRUE)
+    
+    trial <- dat1$trial
+    # get only participants specified in list
+    data <- dat1[,which(colnames(dat1) %in% pplist)]
+    data <- cbind(trial, data)
+    
+    data <- data[which(data$trial == 21), ]
+    subdata <- as.numeric(data[,2:ncol(data)])
+    
+    Mean <- mean(subdata, na.rm = TRUE)
+    SD <- sd(subdata, na.rm = TRUE)
+    
+    groupdat <- data.frame(group, OutlierRemoved_Mean, OutlierRemoved_SD, Mean, SD, pptotal, ppremoved)
+    names(groupdat) <- c('group', 'Mean_OutliersRemoved', 'SD_OutliersRemoved', 'Mean_WithOutliers', 'SD_WithOutliers', 'PP_withMoveThrough', 'PP_Removed')
+    if (prod(dim(dataoutput)) == 0){
+      dataoutput <- groupdat
+    } else {
+      dataoutput <- rbind(dataoutput, groupdat)
+      
+    }
+  }
+  return(dataoutput)
 }
 
 #Path Length-----
@@ -3633,16 +3856,16 @@ plotGroupRDPL <- function(group, target='inline', set) {
   } else if (set == 'fa2020'){
     dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDPL.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
   }
-  #in 60 deg group, one participant had PL of 71. we can remove them and see relationship
-  if (group == '60'){
-    dat <- dat[-which(dat$participant == '216814'),]
-  }
+  # #in 60 deg group, one participant had PL of 71. we can remove them and see relationship
+  # if (group == '60'){
+  #   dat <- dat[-which(dat$participant == '216814'),]
+  # }
   #NA to create empty plot
   # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(0,6), ylim=c(-5,190),
+  plot(NA, NA, xlim = c(0,10), ylim=c(-10,200),
        xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
        main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
-  axis(1, at = c(0, 0.5, 1, 2, 3, 4, 5, 6)) #tick marks for x axis
+  axis(1, at = c(0, 2, 4, 6, 8, 10)) #tick marks for x axis
   axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
   path <- dat$path_length
   #circrd <- dat$circ_rd
@@ -3657,6 +3880,88 @@ plotGroupRDPL <- function(group, target='inline', set) {
   lines(abX, abY, col='#343434')
   
   print(summary(mod1))
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+}
+
+# we can also run the same analyses but with outlier removal for long movement times
+getGroupRDPLOutlierRemoved <- function(groups = c('30', '60'), set){
+  for (group in groups){
+    if (set == 'su2020'){
+      ppall <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDPL.csv',group), check.names = FALSE) #summer data always has 30 deg as first trial
+    } else if (set == 'fa2020'){
+      ppall <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDPL.csv',group), check.names = FALSE)    
+    }
+    
+    trialmu <- mean(ppall$path_length, na.rm = TRUE)
+    trialsigma <- sd(ppall$path_length, na.rm = TRUE)
+    trialclip <- abs(trialmu) + (trialsigma * 2)
+    
+    ppremoved <- ppall$path_length[which(abs(ppall$path_length) > trialclip)]
+    ppremoved <- length(ppremoved)
+    print(ppremoved)
+    
+    ppall$path_length[which(abs(ppall$path_length) > trialclip)] <- NA
+    ppall$circ_rd[which(is.na(ppall$path_length))] <- NA 
+    
+    #return(ppall)
+    if (set == 'su2020'){
+      write.csv(ppall, file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDPL_OutlierRemoved.csv',group), row.names = F)
+    } else if (set == 'fa2020'){
+      write.csv(ppall, file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDPL_OutlierRemoved.csv', group), row.names = F)
+    }
+    
+  }
+  
+  
+}
+
+#Note: SU2020 will only have 30 deg target as first trial in mirror phase
+plotGroupRDPLOutlierRemoved <- function(group, target='inline', set) {
+  
+  
+  #but we can save plot as svg file
+  if (target=='svg' & set == 'su2020') {
+    svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig9A_RDPL_%s_OutlierRemoved.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  } else if (target=='svg' & set == 'fa2020'){
+    svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig9A_RDPL_%s_OutlierRemoved.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  # create plot
+  #meanGroupReaches <- list() #empty list so that it plots the means last
+  #dat <- getGroupRDMT(group=group, set = set)
+  if (set == 'su2020'){
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDPL_OutlierRemoved.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  } else if (set == 'fa2020'){
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDPL_OutlierRemoved.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  }
+  
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,10), ylim=c(-10,200),
+       xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
+       main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+  axis(1, at = c(0, 2, 4, 6, 8, 10)) #tick marks for x axis
+  axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
+  path <- dat$path_length
+  #circrd <- dat$circ_rd
+  circrd <- as.numeric(abs(dat$circ_rd)) #take absolute value, then we can consider values as numeric
+  #circrd <- as.circular(circrd, type='angles', units='degrees', template='none', modulo='asis', zero=0, rotation='counter')
+  points(path,circrd)
+  mod1 <- lm(circrd ~ path)
+  
+  reglinex <- seq(range(path, na.rm = TRUE)[1],range(path, na.rm = TRUE)[2],.1)
+  abX <- range(reglinex)
+  abY <- abX * mod1$coefficients[2] + mod1$coefficients[1]
+  lines(abX, abY, col='#343434')
+  
+  print(summary(mod1))
+  
   
   #close everything if you saved plot as svg
   if (target=='svg') {
@@ -3963,13 +4268,92 @@ plotMoveThroughGroupRDPL <- function(group, moves = c('0', '1'), target='inline'
     #meanGroupReaches <- list() #empty list so that it plots the means last
     dat <- getMoveThroughGroupRDPL(group=group, set = set, moved=move)
     #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
-    if(group == '60' & move == '1'){
-      dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
-    }
+    # if(group == '60' & move == '1'){
+    #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    # }
     
     #NA to create empty plot
     # could maybe use plot.new() ?
-    plot(NA, NA, xlim = c(-1,11), ylim=c(-5,190),
+    plot(NA, NA, xlim = c(0,10), ylim=c(-10,200),
+         xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
+         main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
+    axis(1, at = c(0, 2, 4, 6, 8, 10)) #tick marks for x axis
+    axis(2, at = c(0, 30, 60, 90, 120, 180)) #tick marks for y axis
+    path <- dat$path_length
+    #circrd <- dat$circ_rd
+    circrd <- as.numeric(abs(dat$circ_rd)) #take absolute value, then we can consider values as numeric
+    #ndat <- data.frame(time, circrd)
+    #ndat <- ndat[which(ndat$circrd > 90),]
+    #circrd <- as.circular(circrd, type='angles', units='degrees', template='none', modulo='asis', zero=0, rotation='counter')
+    #points(ndat$time,ndat$circrd)
+    #mod1 <- lm(ndat$circrd ~ ndat$time)
+    
+    points(path,circrd)
+    mod1 <- lm(circrd ~ path)
+    
+    reglinex <- seq(range(path, na.rm = TRUE)[1],range(path, na.rm = TRUE)[2],.1)
+    abX <- range(reglinex)
+    abY <- abX * mod1$coefficients[2] + mod1$coefficients[1]
+    lines(abX, abY, col='#343434')
+    
+    print(summary(mod1))
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+  }
+  
+  
+}
+
+#repeat but with outliers removed
+getMoveThroughGroupRDPLOutlierRemoved <- function(group, set, moved){
+  
+  #ppall <- getTrialOneParticipantsWMoveThrough(group=group, set=set)
+  if (set == 'su2020'){
+    ppall <- read.csv(file='data/mReversalNewAlpha3-master/data/processed/30_TrialOnePPMoveThrough.csv', check.names = FALSE) #summer data always has 30 deg as first trial
+  } else if (set == 'fa2020'){
+    ppall <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_TrialOnePPMoveThrough.csv', group), check.names = FALSE)    
+  }
+  pplist <- ppall[which(ppall$movethrough == moved),] #moved is 1 if movethrough, 0 if not
+  pplist <- pplist$participant
+  
+  #dat <- getGroupRDPL(group=group, set=set)
+  if (set == 'su2020'){
+    dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_RDPL_OutlierRemoved.csv',group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  } else if (set == 'fa2020'){
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_RDPL_OutlierRemoved.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  }
+  
+  # get only participants specified in list
+  data <- dat[which(dat$participant %in% pplist),]
+  
+  return(data)
+}
+
+#NOTE: SU2020 for 30 deg target only
+plotMoveThroughGroupRDPLOutlierRemoved <- function(group, moves = c('0', '1'), target='inline', set) {
+  
+  for(move in moves){
+    #but we can save plot as svg file
+    if (target=='svg' & set == 'su2020') {
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig11A_%s_%s_MoveThrough_RDPL_OutlierRemoved.svg', group, move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    } else if (target=='svg' & set == 'fa2020'){
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig11A_%s_%s_MoveThrough_RDPL_OutlierRemoved.svg', group, move), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    dat <- getMoveThroughGroupRDPL(group=group, set = set, moved=move)
+    #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
+    # if(group == '60' & move == '1'){
+    #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
+    # }
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,10), ylim=c(-10,200),
          xlab = 'Path Length, Step 1', ylab = "Circular Reach deviation, Step 2",
          main = sprintf('%s-deg target: Trial 1', group), frame.plot = FALSE, xaxt = 'n', yaxt = 'n')
     axis(1, at = c(0, 2, 4, 6, 8, 10)) #tick marks for x axis
