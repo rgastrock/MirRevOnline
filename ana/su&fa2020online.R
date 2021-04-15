@@ -3289,7 +3289,7 @@ plotMoveThroughGroupRDMTOutlierRemoved <- function(group, moves = c('0', '1'), t
     
     # create plot
     #meanGroupReaches <- list() #empty list so that it plots the means last
-    dat <- getMoveThroughGroupRDMT(group=group, set = set, moved=move)
+    dat <- getMoveThroughGroupRDMTOutlierRemoved(group=group, set = set, moved=move)
     # #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
     # if (group == '60' & move == '1'){
     #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
@@ -4345,7 +4345,7 @@ plotMoveThroughGroupRDPLOutlierRemoved <- function(group, moves = c('0', '1'), t
     
     # create plot
     #meanGroupReaches <- list() #empty list so that it plots the means last
-    dat <- getMoveThroughGroupRDPL(group=group, set = set, moved=move)
+    dat <- getMoveThroughGroupRDPLOutlierRemoved(group=group, set = set, moved=move)
     #in 60 deg group, one participant had MT of 52 seconds. we can remove them and see relationship
     # if(group == '60' & move == '1'){
     #   dat <- dat[-which(dat$participant == '216814'),] #will work if move = '1'
