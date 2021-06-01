@@ -30,11 +30,13 @@ Some participants or data files had to be removed due to different issues, inclu
 1) incomplete or duplicate data, mismatch in IDs, technical problems
 2) no corresponding Qualtrics data
 3) did not use a mouse or trackpad
-4) cleaned baseline (aligned) reaches
+4) did not approve consent form but did the task (N=1)
+5) indicated neurological disease (N=2)
+6) cleaned baseline (aligned) reaches
 
 For baseline reaches, some participants were reaching in different directions, even though the task required that they reach towards targets in the upper-right quadrant of the workspace. Here, we only included trials that fell within this quadrant for the aligned session. If a participant was left with less than half the data for each target location (i.e. less than 5 trials), they were removed from further analyses.
 
-This led to N = 105 for the instructed group, and N = 645 for the non-instructed group.
+This led to N = 102 for the instructed group, and N = 645 for the non-instructed group.
 
 ## Experiment Schedule
 
