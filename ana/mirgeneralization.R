@@ -51,7 +51,7 @@ getNoPartOneParticipants <- function(){
 
 getParticipantLearningGen <- function(filename){
   
-  #first, implement baseline correction
+  #first, implement baseline correction - this is commented out because other targets do not have baseline, we baseline correct for retention plot below
   #get Aligned biases
   dat <- handleOneFile(filename = filename)
   dat$circ_rd <- as.circular(dat$reachdeviation_deg, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
