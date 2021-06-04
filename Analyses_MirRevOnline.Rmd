@@ -30,13 +30,13 @@ Some participants or data files had to be removed due to different issues, inclu
 1) incomplete or duplicate data, mismatch in IDs, technical problems
 2) no corresponding Qualtrics data
 3) did not use a mouse or trackpad
-4) did not approve consent form but did the task (N=1)
-5) indicated neurological disease (N=2)
+4) did not approve consent form but did the task
+5) indicated neurological disease
 6) cleaned baseline (aligned) reaches
 
 For baseline reaches, some participants were reaching in different directions, even though the task required that they reach towards targets in the upper-right quadrant of the workspace. Here, we only included trials that fell within this quadrant for the aligned session. If a participant was left with less than half the data for each target location (i.e. less than 5 trials), they were removed from further analyses.
 
-This led to N = 102 for the instructed group, and N = 645 for the non-instructed group.
+This led to N = 102 for the instructed group, and N = 609 for the non-instructed group.
 
 ## Experiment Schedule
 
@@ -113,7 +113,7 @@ plotGroupRDMT(group='30', set='fa2020')
 plotGroupRDMTOutlierRemoved(group='30', set='fa2020')
 ```
 
-For the 30 degree target, we find a significant relationship between step 1 movement time and the corresponding reach deviation for that trial. The relationship holds after removing 18 outlier participants for this analysis. Outliers are considered as participants with movement times that are +/- 2 SD from the mean.
+For the 30 degree target, we find a significant relationship between step 1 movement time and the corresponding reach deviation for that trial. The relationship holds after removing 14 outlier participants for this analysis. Outliers are considered as participants with movement times that are +/- 2 SD from the mean.
 
 ```{r}
 plotGroupRDMT(group='60', set='fa2020')
@@ -153,7 +153,7 @@ plotGroupRDPL(group='30', set='fa2020')
 plotGroupRDPLOutlierRemoved(group='30', set='fa2020')
 ```
 
-For the 30 degree target, we do not find a significant relationship between step 1 path length and the corresponding reach deviation for that trial. However, this changes to a significant relationship after removing outliers (7 participants) from this analysis.
+For the 30 degree target, we do not find a significant relationship between step 1 path length and the corresponding reach deviation for that trial. However, this changes to a significant relationship after removing outliers (6 participants) from this analysis.
 
 ```{r}
 plotGroupRDPL(group='60', set='fa2020')
@@ -162,14 +162,14 @@ plotGroupRDPLOutlierRemoved(group='60', set='fa2020')
 
 We find the same pattern of results for the 60 degree target. The relationship is only significant after removing outliers (5 participants).
 
-When we separate participants into the two subgroups of explorers and non-explorers, the relationship is not statistically significant. However, we find a clear distinction in the plots below that explorers have longer step 1 path lengths, and have more reach deviations near full compensation. Note that the for participants with move throughs in the 30 degree location, the relationship is significant (and negative), but the r-squared value is small.
+When we separate participants into the two subgroups of explorers and non-explorers, the relationship is not statistically significant. However, we find a clear distinction in the plots below that explorers have longer step 1 path lengths, and have more reach deviations near full compensation.
 
 ```{r}
 plotMoveThroughGroupRDPL(group='30', set='fa2020')
 plotMoveThroughGroupRDPL(group='60', set='fa2020')
 ```
 
-The relationship in the 30 degree location is no longer significant after outlier removal. However, the relationship for participants with move throughs in the 60 degree location now becomes significant.
+After outlier removal, the relationship for participants with move throughs in the 60 degree location now becomes significant.
 
 ```{r}
 plotMoveThroughGroupRDPLOutlierRemoved(group='30', set='fa2020')
@@ -202,7 +202,7 @@ Below are the frequencies of participants with move through for each target loca
 plotParticipantMoveThrough(set='su2020')
 ```
 
-We see that move throughs are only persistent on trial 1 for the 30 degree target, given that it is always the first trial for this group. 56 out of 109 participants have move throughs in trial 1 for the 30 degree target. Therefore, we can plot the circular density distribution for trial 1 of this target location, while separating participants into subgroups of those with or without move throughs (or exploration).
+We see that move throughs are only persistent on trial 1 for the 30 degree target, given that it is always the first trial for this group. Therefore, we can plot the circular density distribution for trial 1 of this target location, while separating participants into subgroups of those with or without move throughs (or exploration).
 
 ```{r, fig.height=5}
 plotTrialOneCheckGroupCircFreq(group = '30', set='su2020')
@@ -282,7 +282,7 @@ We find that path lengths are initially longer during the first few trials of th
 We compare learning curves, movement times, and path length for each target location for those that used either a mouse or a trackpad to accomplish the task.
 
 ## Non-instructed group
-Sample size: Mouse (N = 194), Trackpad (N = 451)
+Sample size: Mouse (N = 183), Trackpad (N = 426)
 
 ### Learning rates
 
@@ -303,7 +303,7 @@ plotDevicePL()
 ```
 
 ## Instructed group
-Current sample size: Mouse (N = 27), Trackpad (N = 77). 1 participant did not indicate the device they used and is not included in this analysis.
+Current sample size: Mouse (N = 26), Trackpad (N = 76).
 
 ### Learning rates
 
@@ -327,7 +327,7 @@ plotDevicePLSU()
 We compare learning curves, movement times, and path length for each target location for males and females that accomplished the task.
 
 ## Non-instructed group
-Sample size: Male (N = 171), Female (N = 472). 2 participants reported "other". They are not included in this analysis for biological sex.
+Sample size: Male (N = 162), Female (N = 447).
 
 ### Learning rates
 
@@ -348,7 +348,7 @@ plotSexPL()
 ```
 
 ## Instructed group
-Current sample size: Male (N = 27), Female (N = 77). 1 participant did not indicate.
+Current sample size: Male (N = 26), Female (N = 76).
 
 ### Learning rates
 

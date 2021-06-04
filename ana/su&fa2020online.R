@@ -1527,11 +1527,11 @@ getParticipantMoveThrough <- function(group,set){
 
 plotParticipantMoveThrough <- function(groups=c('30','60'),set){
   
-  if(set == 'fa2020'){
-    pdf("data/mirrorreversal-fall/doc/fig/ParticipantMoveThrough.pdf", width=11, pointsize = 8.5)
-  } else if (set == 'su2020'){
-    pdf("data/mReversalNewAlpha3-master/doc/fig/ParticipantMoveThrough.pdf")
-  }
+  # if(set == 'fa2020'){
+  #   pdf("data/mirrorreversal-fall/doc/fig/ParticipantMoveThrough.pdf", width=11, pointsize = 8.5)
+  # } else if (set == 'su2020'){
+  #   pdf("data/mReversalNewAlpha3-master/doc/fig/ParticipantMoveThrough.pdf")
+  # }
   
   for(group in groups){
     data <- getParticipantMoveThrough(group=group, set=set)
@@ -1541,7 +1541,7 @@ plotParticipantMoveThrough <- function(groups=c('30','60'),set){
     #axis(1, at = c(1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90))
     #axis(2, at = c(0, 2, 4, 6, 8, 10, 20, 30, 60)) #tick marks for y axis
   }
-  dev.off()
+  #dev.off()
   
 }
 
