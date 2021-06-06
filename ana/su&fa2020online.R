@@ -1050,6 +1050,85 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
   }
 }
 
+#function below plots just first trial of the function above
+plotMirTrialOneGroupCircFreq <- function(groups = c('30', '60'), set, target='inline'){
+  
+  for(group in groups){
+    
+    #but we can save plot as svg file
+    if (target=='svg' & set == 'fa2020'){
+      svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig2A_Distribution_%sCircular.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    } else if (target=='svg' & set == 'su2020'){
+      svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig2A_Distribution_%sCircular.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    #dat <- getGroupCircFreq(group = group, set = set)
+    #dat <- getGroupCircularLC(group=group, set=set)
+    if (set == 'su2020'){
+      dat <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    } else if (set == 'fa2020'){
+      dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    }
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    #triallist <- dat$trial
+    triallist <- c(1)
+    #triallist <- c(1,2,90)
+    #triallist <- c(1,2,3,4,89,90)
+    
+    if(group == '30' & set == 'su2020'){
+      n <- triallist[seq(1,length(triallist),2)]
+      dat <- dat[which(dat$trial %in% n),]
+      triallist <- dat$trial
+    } else if (group == '60' & set == 'su2020'){
+      triallist <- c(2)
+    }
+    
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      #prefer the plot to have a small circle, and emphasize the density
+      #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #Ysub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #plot(Xsub, Ysub, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.5, tol = .01)
+      #plot(distsubdat, main = sprintf('%s° Target: Trial %s', group, triali), plot.type = 'circle', shrink=1.3)
+      if(group == '30'){
+        plot(distsubdat, main = sprintf('30° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(120, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == '60'){
+        plot(distsubdat, main = sprintf('60° Target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(60, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    dev.off()
+    
+  }
+}
+
 #density plots according to step 1 samples----
 #make changes to handling of file
 handleOneFileCheck <- function(filename) {
