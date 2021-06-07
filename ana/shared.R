@@ -425,3 +425,27 @@ getOnlineGenColourScheme <- function(groups = c('far','near')){
   }
   return(colourscheme)
 }
+
+getCtrlColourScheme <- function(groups = c('far', 'mid', 'near')){
+  #create a list containing the colourscheme per group
+  for (group in groups){
+    colourscheme <- list()
+    
+    colourscheme[['near']] <- list('S'='#ff8200ff', # pure orange
+                                         'T'='#ff82002f')    #2f gives a lighter shade of the color
+    
+    colourscheme[['mid']] <- list('S'='#e51636ff', #vivid/york red
+                                  'T'='#e516362f')
+    
+    colourscheme[['far']] <- list('S'='#c400c4ff', #strong magenta
+                                         'T'='#c400c42f')
+    
+    #colourscheme[['near']] <-   list('S'='#005de4ff', #pure blue
+     #                                'T'='#005de42f')
+    
+    #colourscheme[['ALIGNED']] <-   list('S'='#A9A9A9ff', #dark grey
+    #                               'T'='#A9A9A92f')
+    
+  }
+  return(colourscheme)
+}
