@@ -2319,146 +2319,146 @@ getHandMatches <- function(){
 
 
 
-# # Movement Time and Path Length: Sensorimotor Battery ----
-# # Movement time data: Per participant, get last 40 trials. Then take its mean and SD.
-# getMeanAndStdevMT <- function(set, step = 2){
-#   
-#   if (set == 'su2020'){
-#     datafilenames <- list.files('data/mReversalNewAlpha3-master/data', pattern = '*.csv')
-#   } else if (set == 'fa2020'){
-#     datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
-#   }
-#   
-#   participant <- c()#create place holder
-#   meanMT <- c()
-#   sdMT <- c()
-#   for(datafilenum in c(1:length(datafilenames))){
-#     if (set == 'su2020'){
-#       datafilename <- sprintf('data/mReversalNewAlpha3-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-#     } else if (set == 'fa2020'){
-#       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-#     }
-#     #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
-#     dat <- handleOneMTFile(filename = datafilename, step = step)
-#     
-#     #then get only the last 40 trials of the mirror reversal (trials 71 to 110)
-#     dat <- dat[which(dat$taskno == 2),]
-#     dat <- tail(dat, n = 40)
-#     
-#     #get variables for participant, mean, SD of measure
-#     ppname <- unique(dat$participant)
-#     mean <- mean(dat$time)
-#     stdev <- sd(dat$time)
-#     
-#     participant <- c(participant, ppname)
-#     meanMT <- c(meanMT, mean)
-#     sdMT <- c(sdMT, stdev)
-#     
-#   }
-#   
-#   dfmt <- data.frame(participant, meanMT, sdMT)
-#   
-#   #IMPORTANT: Summer data - These participants have mirror data but no qualtrics data:
-#   # 215797, Tiffany, Victoria, Yue Hu
-#   dfmt <- dfmt[-which(dfmt$participant == '215797'),]
-#   dfmt <- dfmt[-which(dfmt$participant == 'Tiffany'),]
-#   dfmt <- dfmt[-which(dfmt$participant == 'Victoria'),]
-#   dfmt <- dfmt[-which(dfmt$participant == 'Yue Hu'),]
-#   
-#   return(dfmt)
-#   
-# }
-# 
-# # Path Length data: Per participant, get last 40 trials. Then take its mean and SD.
-# getMeanAndStdevPL <- function(set, step = 2){
-#   
-#   if (set == 'su2020'){
-#     datafilenames <- list.files('data/mReversalNewAlpha3-master/data', pattern = '*.csv')
-#   } else if (set == 'fa2020'){
-#     datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
-#   }
-#   
-#   participant <- c()#create place holder
-#   meanPL <- c()
-#   sdPL <- c()
-#   for(datafilenum in c(1:length(datafilenames))){
-#     if (set == 'su2020'){
-#       datafilename <- sprintf('data/mReversalNewAlpha3-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-#     } else if (set == 'fa2020'){
-#       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-#     }
-#     #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
-#     dat <- handleOneFilePathLength(filename = datafilename, step = step)
-#     
-#     #then get only the last 40 trials of the mirror reversal (trials 71 to 110)
-#     dat <- dat[which(dat$taskno == 2),]
-#     dat <- tail(dat, n = 40)
-#     
-#     #get variables for participant, mean, SD of measure
-#     ppname <- unique(dat$participant)
-#     mean <- mean(dat$path_length)
-#     stdev <- sd(dat$path_length)
-#     
-#     participant <- c(participant, ppname)
-#     meanPL <- c(meanPL, mean)
-#     sdPL <- c(sdPL, stdev)
-#     
-#   }
-#   
-#   dfpl <- data.frame(participant, meanPL, sdPL)
-#   
-#   #IMPORTANT: Summer data - These participants have mirror data but no qualtrics data:
-#   # 215797, Tiffany, Victoria, Yue Hu
-#   dfpl <- dfpl[-which(dfpl$participant == '215797'),]
-#   dfpl <- dfpl[-which(dfpl$participant == 'Tiffany'),]
-#   dfpl <- dfpl[-which(dfpl$participant == 'Victoria'),]
-#   dfpl <- dfpl[-which(dfpl$participant == 'Yue Hu'),]
-#   
-#   return(dfpl)
-#   
-# }
-# 
-# # After, add a column to Qualtrics data matching the MT and PL data for each participant
-# getQualtMirData <- function(set){
-#   #get data
-#   if(set=='su2020'){
-#     qualt <- read.csv('data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
-#     MTdat <- getMeanAndStdevMT(set = set, step = 2)
-#     PLdat <- getMeanAndStdevPL(set = set, step = 2)
-#   } else if (set=='fa2020'){
-#     qualt <- read.csv('data/mirrorreversal-fall/data/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
-#     MTdat <- getMeanAndStdevMT(set = set, step = 2)
-#     PLdat <- getMeanAndStdevPL(set = set, step = 2)
-#   }
-#   
-#   #can put together behavioral data
-#   behavdat <- cbind(MTdat, PLdat[,2:3])
-#   
-#   #add empty columns to qualtrics data
-#   qualt$meanMT <- rep(NA, nrow(qualt))
-#   qualt$sdMT <- rep(NA, nrow(qualt))
-#   qualt$meanPL <- rep(NA, nrow(qualt))
-#   qualt$sdPL <- rep(NA, nrow(qualt))
-#   
-#   qualtpp <- qualt$Please.enter.your.URPP.number.[-1] #remove the extra header row
-#   for (ppname in qualtpp){
-#     ppdat <- qualt[which(qualt$Please.enter.your.URPP.number. == ppname),]
-#     bdat <- behavdat[which(behavdat$participant == ppname),-1] #can remove participant column
-#     
-#     ppdat$meanMT <- bdat$meanMT
-#     ppdat$sdMT <- bdat$sdMT
-#     ppdat$meanPL <- bdat$meanPL
-#     ppdat$sdPL <- bdat$sdPL
-#     
-#     qualt[which(qualt$Please.enter.your.URPP.number. == ppname),] <- ppdat
-#   }
-#   
-#   if(set=='su2020'){
-#     write.csv(qualt, file='data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_Mirror.csv', row.names = F)
-#   } else if(set=='fa2020'){
-#     write.csv(qualt, file='data/mirrorreversal-fall/data/processed/FA_Qualtrics_Mirror.csv', row.names = F)
-#   }
-# }
+# Movement Time and Path Length: Sensorimotor Battery ----
+# Movement time data: Per participant, get last 40 trials. Then take its mean and SD.
+getMeanAndStdevMT <- function(set, step = 2){
+
+  if (set == 'su2020'){
+    datafilenames <- list.files('data/mReversalNewAlpha3-master/data', pattern = '*.csv')
+  } else if (set == 'fa2020'){
+    datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+  }
+
+  participant <- c()#create place holder
+  meanMT <- c()
+  sdMT <- c()
+  for(datafilenum in c(1:length(datafilenames))){
+    if (set == 'su2020'){
+      datafilename <- sprintf('data/mReversalNewAlpha3-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    } else if (set == 'fa2020'){
+      datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    }
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    dat <- handleOneMTFile(filename = datafilename, step = step)
+
+    #then get only the last 40 trials of the mirror reversal (trials 71 to 110)
+    dat <- dat[which(dat$taskno == 2),]
+    dat <- tail(dat, n = 40)
+
+    #get variables for participant, mean, SD of measure
+    ppname <- unique(dat$participant)
+    mean <- mean(dat$time)
+    stdev <- sd(dat$time)
+
+    participant <- c(participant, ppname)
+    meanMT <- c(meanMT, mean)
+    sdMT <- c(sdMT, stdev)
+
+  }
+
+  dfmt <- data.frame(participant, meanMT, sdMT)
+
+  #IMPORTANT: Summer data - These participants have mirror data but no qualtrics data:
+  # 215797, Tiffany, Victoria, Yue Hu
+  # dfmt <- dfmt[-which(dfmt$participant == '215797'),]
+  # dfmt <- dfmt[-which(dfmt$participant == 'Tiffany'),]
+  # dfmt <- dfmt[-which(dfmt$participant == 'Victoria'),]
+  # dfmt <- dfmt[-which(dfmt$participant == 'Yue Hu'),]
+
+  return(dfmt)
+
+}
+
+# Path Length data: Per participant, get last 40 trials. Then take its mean and SD.
+getMeanAndStdevPL <- function(set, step = 2){
+
+  if (set == 'su2020'){
+    datafilenames <- list.files('data/mReversalNewAlpha3-master/data', pattern = '*.csv')
+  } else if (set == 'fa2020'){
+    datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+  }
+
+  participant <- c()#create place holder
+  meanPL <- c()
+  sdPL <- c()
+  for(datafilenum in c(1:length(datafilenames))){
+    if (set == 'su2020'){
+      datafilename <- sprintf('data/mReversalNewAlpha3-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    } else if (set == 'fa2020'){
+      datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    }
+    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    dat <- handleOneFilePathLength(filename = datafilename, step = step)
+
+    #then get only the last 40 trials of the mirror reversal (trials 71 to 110)
+    dat <- dat[which(dat$taskno == 2),]
+    dat <- tail(dat, n = 40)
+
+    #get variables for participant, mean, SD of measure
+    ppname <- unique(dat$participant)
+    mean <- mean(dat$path_length)
+    stdev <- sd(dat$path_length)
+
+    participant <- c(participant, ppname)
+    meanPL <- c(meanPL, mean)
+    sdPL <- c(sdPL, stdev)
+
+  }
+
+  dfpl <- data.frame(participant, meanPL, sdPL)
+
+  #IMPORTANT: Summer data - These participants have mirror data but no qualtrics data:
+  # 215797, Tiffany, Victoria, Yue Hu
+  # dfpl <- dfpl[-which(dfpl$participant == '215797'),]
+  # dfpl <- dfpl[-which(dfpl$participant == 'Tiffany'),]
+  # dfpl <- dfpl[-which(dfpl$participant == 'Victoria'),]
+  # dfpl <- dfpl[-which(dfpl$participant == 'Yue Hu'),]
+
+  return(dfpl)
+
+}
+
+# After, add a column to Qualtrics data matching the MT and PL data for each participant
+getQualtMirData <- function(set){
+  #get data
+  if(set=='su2020'){
+    qualt <- read.csv('data/mReversalNewAlpha3-master/qualtrics/processed/SU_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    MTdat <- getMeanAndStdevMT(set = set, step = 2)
+    PLdat <- getMeanAndStdevPL(set = set, step = 2)
+  } else if (set=='fa2020'){
+    qualt <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    MTdat <- getMeanAndStdevMT(set = set, step = 2)
+    PLdat <- getMeanAndStdevPL(set = set, step = 2)
+  }
+
+  #can put together behavioral data
+  behavdat <- cbind(MTdat, PLdat[,2:3])
+
+  #add empty columns to qualtrics data
+  qualt$meanMT <- rep(NA, nrow(qualt))
+  qualt$sdMT <- rep(NA, nrow(qualt))
+  qualt$meanPL <- rep(NA, nrow(qualt))
+  qualt$sdPL <- rep(NA, nrow(qualt))
+
+  qualtpp <- qualt$id[-1] #remove the extra header row
+  for (ppname in qualtpp){
+    ppdat <- qualt[which(qualt$id == ppname),]
+    bdat <- behavdat[which(behavdat$participant == ppname),-1] #can remove participant column
+
+    ppdat$meanMT <- bdat$meanMT
+    ppdat$sdMT <- bdat$sdMT
+    ppdat$meanPL <- bdat$meanPL
+    ppdat$sdPL <- bdat$sdPL
+
+    qualt[which(qualt$id == ppname),] <- ppdat
+  }
+
+  if(set=='su2020'){
+    write.csv(qualt, file='data/mReversalNewAlpha3-master/data/processed/SU_Qualtrics_Mirror.csv', row.names = F)
+  } else if(set=='fa2020'){
+    write.csv(qualt, file='data/mirrorreversal-fall/data/processed/FA_Qualtrics_Mirror.csv', row.names = F)
+  }
+}
 
 
 
