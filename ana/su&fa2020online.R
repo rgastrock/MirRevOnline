@@ -5663,6 +5663,25 @@ plotCircularAllTasks <- function(groups = c('30', '60'), target='inline', set) {
 }
 
 # generate heatmaps of angular reach deviations across trials----
+group='30'
+set='fa2020'
+dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+heatmap(data)
+subdatA <- as.numeric(dat[1,2:length(dat)])
+subdatA <- subdatA[which(is.finite(subdatA))]
+trialno
+subdatA <- as.matrix(subdatA)
+heatmap(subdatA)
+
+
+
+
+
+
+
+
+
+
 
 
 # #Aligned session -----
