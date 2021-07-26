@@ -1009,6 +1009,7 @@ plotGroupCircFreq <- function(groups = c('30', '60'), set){
       subdat <- dat[which(dat$trial == triali),]
       subdat <- as.numeric(subdat[,2:ncol(subdat)])
       subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
       distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
       #prefer the plot to have a small circle, and emphasize the density
       #Xsub <- as.circular(NA, type='angles', units ='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
@@ -4495,6 +4496,7 @@ removeOutlierAlignedReaches <- function(group, set){
 }
 
 #then if each participant is left with just less than 5 trials for each target, remove participant from analysis
+#function returns null if no more outliers
 getParticipantsOutlierAligned <- function(group, set){
   #data <- removeOutlierAlignedReaches(group=group, set=set)
   if (set == 'su2020'){
@@ -4629,7 +4631,7 @@ getGroupCircularAlignedConfInt <- function(groups = c('30','60'), set){
       if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
         citrial <- as.numeric(c(NA,NA,NA))
       } else{
-        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- getCircularConfidenceInterval(data = circ_subdat) #see function, this is bootstrapped
         citrial <- as.numeric(citrial)
       }
       
@@ -5659,6 +5661,9 @@ plotCircularAllTasks <- function(groups = c('30', '60'), target='inline', set) {
   
   
 }
+
+# generate heatmaps of angular reach deviations across trials----
+
 
 # #Aligned session -----
 # getAlParticipantMirrorLC <- function(filename){
