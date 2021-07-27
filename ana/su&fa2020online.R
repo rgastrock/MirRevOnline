@@ -1073,7 +1073,7 @@ plotMirTrialOneGroupCircFreq <- function(groups = c('30', '60'), set, target='in
     
     #current fix for summer data being non-randomized and not counterbalanced
     #triallist <- dat$trial
-    triallist <- c(1)
+    triallist <- c(2)
     #triallist <- c(1,2,90)
     #triallist <- c(1,2,3,4,89,90)
     
@@ -5662,25 +5662,228 @@ plotCircularAllTasks <- function(groups = c('30', '60'), target='inline', set) {
   
 }
 
-# generate heatmaps of angular reach deviations across trials----
-group='30'
-set='fa2020'
-dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
-heatmap(data)
-subdatA <- as.numeric(dat[1,2:length(dat)])
-subdatA <- subdatA[which(is.finite(subdatA))]
-trialno
-subdatA <- as.matrix(subdatA)
-heatmap(subdatA)
+# Generate heatmaps of angular reach deviations across trials----
+plotIndividualAllTasks <- function(groups = c('30', '60'), target='inline', set){
+  if (set == 'fa2020'){
+    for (group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig1D_%s_IndividualAllTasks.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      
+      data_AL<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+      data_MIR<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+      data_RAE<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0,131), ylim = c(-200,200), 
+           xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Individual rate of learning (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #aligned trials
+      mean_AL <- c()
+      for (triali in data_AL$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_AL[triali,2:ncol(data_AL)])
+        X <- rep(triali, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_AL <- c(mean_AL, Ymean)
+      }
+      lines(x=c(1:20), y=mean_AL, col='orange', lw=2)
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned_CI.csv', group))
+      circmean_AL <- dat_CI[,2]
+      lines(x=c(1:20), y=circmean_AL, col='red', lw=2)
+      
+      
+      #mirrored trials
+      mean_MIR <- c()
+      for (triali in data_MIR$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_MIR[triali,2:ncol(data_MIR)])
+        X <- rep(triali + 20, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_MIR <- c(mean_MIR, Ymean)
+      }
+      lines(x=c(21:110), y=mean_MIR, col='orange', lw=2)
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC_CI.csv', group))
+      circmean_MIR <- dat_CI[,2]
+      lines(x=c(21:110), y=circmean_MIR, col='red', lw=2)
+      
+      
+      #washout trials
+      mean_RAE <- c()
+      for (triali in data_RAE$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_RAE[triali,2:ncol(data_RAE)])
+        X <- rep(triali + 110, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_RAE <- c(mean_RAE, Ymean)
+      }
+      lines(x=c(111:130), y=mean_RAE, col='orange', lw=2)
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE_CI.csv', group))
+      circmean_RAE <- dat_CI[,2]
+      lines(x=c(111:130), y=circmean_RAE, col='red', lw=2)
+      
+      
+      legend(0,-90,legend=c('circular mean','numeric mean'),
+             col=c('red','orange'),
+             lty=1,bty='n',cex=1,lwd=2)
+      
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    } #end for loop
+  } else if (set == 'su2020'){
+    for (group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig1D_%s_IndividualAllTasks.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      
+      data_AL<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+      data_MIR<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+      data_RAE<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0,131), ylim = c(-200,200), 
+           xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Individual rate of learning (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #aligned trials
+      mean_AL <- c()
+      for (triali in data_AL$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_AL[triali,2:ncol(data_AL)])
+        X <- rep(triali, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_AL <- c(mean_AL, Ymean)
+      }
+      if (group == '30'){
+        lines(x=seq(1,20,2), y=na.omit(mean_AL), col='orange', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(2,20,2), y=na.omit(mean_AL), col='orange', lw=2)
+      }
+      
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularAligned_CI.csv', group))
+      circmean_AL <- dat_CI[,2]
+      if (group == '30'){
+        lines(x=seq(1,20,2), y=na.omit(circmean_AL), col='red', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(2,20,2), y=na.omit(circmean_AL), col='red', lw=2)
+      }
+      
+      
+      
+      #mirrored trials
+      mean_MIR <- c()
+      for (triali in data_MIR$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_MIR[triali,2:ncol(data_MIR)])
+        X <- rep(triali + 20, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_MIR <- c(mean_MIR, Ymean)
+      }
+      if (group == '30'){
+        lines(x=seq(21,110,2), y=na.omit(mean_MIR), col='orange', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(22,110,2), y=na.omit(mean_MIR), col='orange', lw=2)
+      }
+      
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC_CI.csv', group))
+      circmean_MIR <- dat_CI[,2]
+      if (group == '30'){
+        lines(x=seq(21,110,2), y=na.omit(circmean_MIR), col='red', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(22,110,2), y=na.omit(circmean_MIR), col='red', lw=2)
+      }
+      
+      
+      #washout trials
+      mean_RAE <- c()
+      for (triali in data_RAE$trial){
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(data_RAE[triali,2:ncol(data_RAE)])
+        X <- rep(triali + 110, length(Y))
+        points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+        
+        #plot line indicating mean of data points as numeric values
+        Y <- as.numeric(Y)
+        Ymean <- mean(Y, na.rm = T)
+        mean_RAE <- c(mean_RAE, Ymean)
+      }
+      if (group == '30'){
+        lines(x=seq(111,130,2), y=na.omit(mean_RAE), col='orange', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(112,130,2), y=na.omit(mean_RAE), col='orange', lw=2)
+      }
+      
+      #plot line indicating mean of data points as circular values
+      dat_CI <- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE_CI.csv', group))
+      circmean_RAE <- dat_CI[,2]
+      if (group == '30'){
+        lines(x=seq(111,130,2), y=na.omit(circmean_RAE), col='red', lw=2)
+      } else if (group == '60'){
+        lines(x=seq(112,130,2), y=na.omit(circmean_RAE), col='red', lw=2)
+      }
+      
+      
+      legend(0,-90,legend=c('circular mean','numeric mean'),
+             col=c('red','orange'),
+             lty=1,bty='n',cex=1,lwd=2)
+      
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    } #end for loop
+  }
+} #end function
 
 
 
-
-
-
-
-
-
+# data <- as.matrix(data[,2:ncol(data)])
+# heatmap(matrix(data, 609, 20), Rowv=NA, Colv=NA)
+# image(data)
 
 
 

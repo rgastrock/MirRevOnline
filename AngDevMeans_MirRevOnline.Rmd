@@ -1,0 +1,82 @@
+---
+title: "Angular Deviation Means"
+author: "Raphael Gastrock"
+output: html_document
+---
+
+
+# Overview
+
+This document contains extra analyses conducted to gain a better understanding of the mean values observed in figures containing rates of learning. This way, we can be more confident about the interpretations we make regarding the data.
+
+# Set up the R enviornment
+
+We have written code that pre-processes the data, plots figures, and runs statistical tests. Import the sources below:
+
+```{r message=FALSE, warning=FALSE}
+source('ana/shared.R')
+source('ana/su&fa2020online.R')
+source('ana/qualtricsdata.R')
+```
+
+# Context
+
+Reach data are pre-processed to have target locations aligned to zero. Thus, the magnitude of a given value compared to zero would indicate the angular reach deviation, and the sign of this value would indicate the direction with respect to target. Due to the nature of the mirror reversal, participants make reaches in highly variable directions. This means that they can have angular reach deviations of 180 degrees and -180 degrees. Treating these values as linear makes it seem as if these values are in two different opposite locations, which is not the case. This is why we transformed that data to be circular (i.e., both values would be at 180 degrees in a circle). The advantage of transforming the data to circular numbers is evident when calculating the mean values for angular reach deviations across trials. Consider the example below:
+
+```{r}
+numdat <- c(-175, -170, -165, 165, 170, 175)
+circdat <- as.circular(numdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+plot(numdat)
+plot(circdat)
+mean(numdat)
+mean.circular(circdat)
+```
+
+Here, we see that the mean for the data when treated as numeric is at 0 degrees, while the mean for the circular data is at 180 degrees. Importantly, all learning curve figures within our analyses use circular data. That is, the reach deviations are transformed into circular numbers, then 95% bootstrapped confidence intervals are calculated based on the mean of this circular data. These values are then just transformed back to a numeric type, in order to plot them on a 2-dimensional figure (i.e. plot with x and y axes). (For more information see code for function: getCircularConfidenceInterval in shared.R)
+
+# Discrepancy between 2-D and circular plot?
+
+```{r}
+plotCircularAllTasks(set='fa2020')
+```
+
+![30 degree Target](data/mirrorreversal-fall/doc/fig/Fig2A_Distribution_30Circular.svg)
+
+Let's consider just the fall (non-instructed) data set. We observe with the learning curve plot that by the second trial, participants are already at perfect compensation (120 degrees) for the 30 degree target, then this dips down to around 90 degrees.
+
+However, when we look at the circular plot for trial 2, the peak of the density distribution seems to be at a higher value than perfect compensation. It is important to note that the peak of this density is not equivalent to the mean, given that the values are distributed all around. Indeed, the mean values for every trial are equivalent to those shown in the 2-D plot. The density distribution peaks are higher at a different value than the mean depending on how many participants have reaches within a particular location. In other words, the peak is representing the mode of the distribution. Note, however, that the peak may not always be the mode, as different locations can have the same frequency values (multiple modes).
+
+# Individual distibutions on a 2-D plot
+
+Next, we can investigate the mean values observed in our learning curve figures by simply showing angular reach deviations from every participant, across all trials. We show such a plot for every target location for the two data sets (non-instructed, followed by instructed).
+
+```{r, fig.width = 20, fig.height = 12}
+plotIndividualAllTasks(set='fa2020')
+plotIndividualAllTasks(set='su2020')
+```
+
+Note for these plots that 180 and -180 are the same locations in space. We observe a variable distribution of reach deviations during the mirror reversed trials. For example, with the non-instructed set, there seems to be a bimodal distribution for the 30 degree target, where we see deviations around perfect compensation and some closer to zero. The red line indicates the circular mean, which is equivalent to values we observe from the learning curve figures. The orange line is what the mean would be, based on just the numerical values of the dots. The circular mean is a better representation, but is clearly being biased by the bimodal distribution.
+
+Why is the circular mean higher at the start? It seems to be pulled by having more deviations in the negative direction (equal to or even more negative than -180). Again, given that these are similar locations to + 180 degrees, it would make sense that the mean would be where it is. However, deviations in this direction diminish in later trials, thereby losing the effect it had on the mean during early trials. Thus, the mean in later trials is positioned in between the bimodal distribution. This may explain the "drift" that we observe with the learning curve for the 30 degree target in the non-instructed data set.
+
+What are those responses not near zero for washout trials? These likely just reflect participants with noisy data (i.e. reaching in various directions). Note that this is not seen in aligned trials because we deliberately considered only reach deviations that fell within the upper-right quadrant of the workspace (see baseline cleaning procedure). However, majority of the responses and the mean values are still around zero, indicating the absence of reach aftereffects.
+
+Interesting things to note: It seems like the bimodal distribution is more evident with the 30 degree target, compared to the 60 degree target. Moreover, we observe a larger "drift" in learning for the 30 degree target. Learning could be dependent on target location then, or how far the target is from the mirror axis. Perhaps the control experiment will provide more insight in relation to this. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
