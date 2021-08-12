@@ -42,9 +42,9 @@ handleOneCtrlFile <- function(filename) {
     x <- x[step2idx]
     y <- y[step2idx]
     
-    #plot(x,y,type='l',col='blue',xlim=c(-1.2,1.2),ylim=c(-1.2,1.2))
-    #lines(c(0,1),c(0,0),col='black')
-    #points(c(0,cos((a/180)*pi)),c(0,sin((a/180)*pi)),col='black')
+    # plot(x,y,type='l',col='blue',xlim=c(-1.2,1.2),ylim=c(-1.2,1.2))
+    # lines(c(0,1),c(0,0),col='black')
+    # points(c(0,cos((a/180)*pi)),c(0,sin((a/180)*pi)),col='black')
     
     # get first point beyond some distance (home-target is 40% of height of participant's screen)
     # we can set a cutoff at 30% of home-target distance (30% of .4 = .12)
@@ -80,12 +80,124 @@ handleOneCtrlFile <- function(filename) {
   return(dfrd)
 }
 
+#Use experimental data for those that also have qualtrics data
+getCtrlMirWithoutQualtrics <- function(){
+  
+  #participant list from behavioral data
+  
+  datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+  
+  
+  
+  dataoutput<- c() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- handleOneCtrlFile(filename = datafilename)
+    ppname <- unique(adat$participant)
+    
+    dataoutput <- c(dataoutput, ppname)
+  }
+  
+  #read in Qualtrics sheet
+  qualt <- read.csv('data/controlmironline-master/qualtrics/ControlMir-SU2021-Part1_June 30, 2021_11.29.csv', stringsAsFactors = F)
+  #find which of our dataoutput (pp with data) have qualtrics data as well
+  ppqualt <- qualt$id[-c(1:2)]
+  pp_no_qualt <- dataoutput[which(dataoutput %in% ppqualt == FALSE)]
+  
+  
+  return(pp_no_qualt)
+  #function returns nothing if all data we have also have corresponding Qualtrics data
+}
+
+#Function below will generate a new csv file of Qualtrics data that contains only participants that also have experimental data
+getCtrlMirQualtricsData <- function(){
+  datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+  
+  
+  
+  dataoutput<- c() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- handleOneCtrlFile(filename = datafilename)
+    ppname <- unique(adat$participant)
+    
+    dataoutput <- c(dataoutput, ppname)
+  }
+  
+  qualt <- read.csv('data/controlmironline-master/qualtrics/ControlMir-SU2021-Part1_June 30, 2021_11.29.csv', stringsAsFactors = F)
+  
+  ndataoutput <- data.frame()
+  for (pp in dataoutput){
+    if(pp %in% qualt$id){
+      ndat <- qualt[which(qualt$id == pp),]
+    }
+    
+    if (prod(dim(ndataoutput)) == 0){
+      ndataoutput <- ndat
+    } else {
+      ndataoutput <- rbind(ndataoutput, ndat)
+    }
+  }
+  
+  row1qualt <- qualt[1,]
+  alldat <- rbind(row1qualt, ndataoutput)
+  write.csv(alldat, file='data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', row.names = F)
+  
+}
+
+#Funtion collects hand responses for checking (i.e. did they use appropriate hand for task)
+getCtrlHandMatches <- function(){
+  
+  datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+ 
+  allresp <- data.frame()
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    df <- read.csv(datafilename, stringsAsFactors = F)
+    ppname <- unique(df$participant)
+    keyresp <- df$intrResp.keys[which(df$intrResp.keys != "")] #remove empty strings
+    keyresp <- paste(keyresp, collapse=",") #collapse as one string
+    ppresp <- data.frame(ppname, keyresp) #collect with participant id
+    
+    allresp <- rbind(allresp, ppresp)
+  }
+  
+  ctrlmirdat <- read.csv('data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  
+  qualtresp <- data.frame()
+  for(pp in allresp$ppname){
+    subdat <- ctrlmirdat[which(ctrlmirdat$id == pp),]
+    ppname <- pp
+    handedness <- subdat$Q2.5 #what is their handedness
+    comphand <- subdat$Q3.3 #which hand they typically use for controlling mouse
+    handresp <- subdat$Q8.2 #response to hand switching
+    qualtppresp <- data.frame(ppname, handedness, comphand, handresp)
+    
+    qualtresp <- rbind(qualtresp, qualtppresp)
+  }
+  
+  handmatches <- merge(allresp, qualtresp, by='ppname')
+  
+  write.csv(handmatches, file='data/controlmironline-master/data/processed/HandMatches.csv', row.names = F)
+  #These were then manually inspected to see any mismatches
+}
+
 #Learning rates----
 
+#gather reach deviations for all participants, across all trials
 getParticipantLearningCtrl <- function(filename){
   
-  #first, implement baseline correction - this is commented out because other targets do not have baseline, we baseline correct for retention plot below
-  #get Aligned biases
   dat <- handleOneCtrlFile(filename = filename)
   dat$circ_rd <- as.circular(dat$reachdeviation_deg, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
   
@@ -108,7 +220,7 @@ getParticipantLearningCtrl <- function(filename){
 }
 
 getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
-  #group is either 'far', 'mid', 'near'
+  #group is either 'far', 'mid', 'near' in relation to mirror
   for(group in groups){
     datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
     
@@ -122,7 +234,7 @@ getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
       # per target location, get reachdev for corresponding trials
       
       trial <- c(1:length(adat$trialno))
-      adat$trialno <- trial
+      #adat$trialno <- trial
       for (triali in trial){
         trialdat <- adat[which(adat$trialno == triali),]
         #set reachdev to NA if not the target location we want
@@ -150,6 +262,7 @@ getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
     write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_LearningCtrl.csv', group), row.names = F)
   }
 }
+
 
 getGroupLearningCtrlConfInt <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
