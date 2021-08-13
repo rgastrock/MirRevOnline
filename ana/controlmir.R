@@ -202,7 +202,9 @@ getParticipantLearningCtrl <- function(filename){
   dat$circ_rd <- as.circular(dat$reachdeviation_deg, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
   
   targetdist <- c()
+  
   for (target in dat$targetangle_deg){
+    #group targets by how far each one is from mirror (far, mid, near)
     if (target %in% c(5, 175, 355)){
       dist <- 'far'
       targetdist <- c(targetdist, dist)
@@ -219,7 +221,8 @@ getParticipantLearningCtrl <- function(filename){
   return(dat)
 }
 
-getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
+#Aligned data for both hands----
+getAlignedGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
   #group is either 'far', 'mid', 'near' in relation to mirror
   for(group in groups){
     datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
@@ -231,6 +234,7 @@ getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
       
       cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
       adat <- getParticipantLearningCtrl(filename = datafilename)
+      adat <- adat[which(adat$taskno == 1 | adat$taskno == 2),] #get only aligned data for both hands
       # per target location, get reachdev for corresponding trials
       
       trial <- c(1:length(adat$trialno))
@@ -259,15 +263,15 @@ getGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
     
     
     #return(dataoutput)
-    write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_LearningCtrl.csv', group), row.names = F)
+    write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), row.names = F)
   }
 }
 
 
-getGroupLearningCtrlConfInt <- function(groups = c('far', 'mid', 'near')){
+getAlignedGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
     
-    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_LearningCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
     
     
     
@@ -293,17 +297,17 @@ getGroupLearningCtrlConfInt <- function(groups = c('far', 'mid', 'near')){
         confidence <- rbind(confidence, citrial)
       }
 
-      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_LearningCtrl_CI.csv', group), row.names = F) 
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group), row.names = F) 
       
     }
   }
 }
 
-plotLearningCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
+plotAlignedCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   
   if (target=='svg') {
-    svglite(file='data/controlmironline-master/doc/fig/Fig1_LearningCtrl.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmironline-master/doc/fig/Fig1_AlignedCtrl.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
   
@@ -313,22 +317,22 @@ plotLearningCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
   
   #NA to create empty plot
   # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(0,178), ylim = c(-10,185), 
+  plot(NA, NA, xlim = c(0,67), ylim = c(-30,185), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
-       main = "Rate of learning per target location", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
-  abline(h = c(0, 10, 90, 170), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
-  axis(1, at = c(1, 46, 67, 97, 127, 157, 177)) #tick marks for x axis
-  axis(2, at = c(0, 10, 50, 90, 130, 170)) #tick marks for y axis
+       main = "Aligned reaches", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  abline(h = c(0, 10, 90, 170), v = c(45, 66), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  axis(1, at = c(1, 10, 20, 30, 40, 46, 56, 66)) #tick marks for x axis
+  axis(2, at = c(-30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
   
   for(group in groups){
     #read in files created by getGroupConfidenceInterval in filehandling.R
-    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_LearningCtrl_CI.csv', group))
+    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group))
     
     #split up data set for plotting purposes
     groupconfidenceAligned <- groupconfidence[1:45,]
     groupconfidenceLeftAligned <- groupconfidence[46:66,]
-    groupconfidenceMirrored <- groupconfidence[67:156,]
-    groupconfidenceRAE <- groupconfidence[157:177,]
+    #groupconfidenceMirrored <- groupconfidence[67:156,]
+    #groupconfidenceRAE <- groupconfidence[157:177,]
     
     colourscheme <- getCtrlColourScheme(groups = group)
     #plot Aligned Data
@@ -361,38 +365,38 @@ plotLearningCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
     col <- colourscheme[[group]][['S']]
     lines(x = c(46:66), y = mid,col=col,lty=1)
     
-    #plot Mirrored Data
-    lower <- groupconfidenceMirrored[,1]
-    upper <- groupconfidenceMirrored[,3]
-    mid <- groupconfidenceMirrored[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(67:156), rev(c(67:156))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(67:156), y = mid,col=col,lty=1)
-    
-    #plot Wahout Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceRAE[,1]
-    upper <- groupconfidenceRAE[,3]
-    mid <- groupconfidenceRAE[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(157:177), rev(c(157:177))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(157:177), y = mid,col=col,lty=1)
+    # #plot Mirrored Data
+    # lower <- groupconfidenceMirrored[,1]
+    # upper <- groupconfidenceMirrored[,3]
+    # mid <- groupconfidenceMirrored[,2]
+    # 
+    # col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    # 
+    # #upper and lower bounds create a polygon
+    # #polygon creates it from low left to low right, then up right to up left -> use rev
+    # #x is just trial nnumber, y depends on values of bounds
+    # polygon(x = c(c(67:156), rev(c(67:156))), y = c(lower, rev(upper)), border=NA, col=col)
+    # col <- colourscheme[[group]][['S']]
+    # lines(x = c(67:156), y = mid,col=col,lty=1)
+    # 
+    # #plot Wahout Data
+    # #take only first, last and middle columns of file
+    # lower <- groupconfidenceRAE[,1]
+    # upper <- groupconfidenceRAE[,3]
+    # mid <- groupconfidenceRAE[,2]
+    # 
+    # col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    # 
+    # #upper and lower bounds create a polygon
+    # #polygon creates it from low left to low right, then up right to up left -> use rev
+    # #x is just trial nnumber, y depends on values of bounds
+    # polygon(x = c(c(157:177), rev(c(157:177))), y = c(lower, rev(upper)), border=NA, col=col)
+    # col <- colourscheme[[group]][['S']]
+    # lines(x = c(157:177), y = mid,col=col,lty=1)
   }
   
   #add legend
-  legend(60,25,legend=c('far target','mid target', 'near target'),
+  legend(5,145,legend=c('far target','mid target', 'near target'),
          col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
          lty=1,bty='n',cex=1,lwd=2)
   
@@ -400,7 +404,17 @@ plotLearningCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
   if (target=='svg') {
     dev.off()
   }
-  
-  
-  
 }
+
+#Mirrored data----
+#baseline biases removed, sign flip for other quadrants
+
+
+
+
+
+
+
+
+
+
