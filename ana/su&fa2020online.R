@@ -5928,9 +5928,11 @@ plotHeatmaps <- function(groups = c('30', '60'), target = 'inline', set){
       Y <- alldat$angles
       Z <- alldat$bincount
       col <- colorRampPalette(brewer.pal(9, "PuBu"))
-      xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x-axis
-      yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180)) #tick marks for y-axis
-      fig <- levelplot(Z~X*Y, main = sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), xlab = 'Trial', ylab = 'Angular reach deviation (°)', col.regions = col,
+      xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130), cex = 1.5) #tick marks for x-axis
+      yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), cex = 1.5) #tick marks for y-axis
+      ckey <- list(labels = list(cex = 1.5)) #for colour key
+      fig <- levelplot(Z~X*Y, main = list(sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), cex = 1.5), xlab = list('Trial', cex = 1.5), ylab = list('Angular reach deviation (°)', cex = 1.5),
+                       colorkey = ckey, col.regions = col,
                        scales = list(tck = c(1,0), x = xscale, y = yscale),
                        panel = function(...){
                          panel.levelplot(...)
@@ -5994,9 +5996,11 @@ plotHeatmaps <- function(groups = c('30', '60'), target = 'inline', set){
       Y <- alldat$angles
       Z <- alldat$bincount
       col <- colorRampPalette(brewer.pal(9, "PuBu"))
-      xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x-axis
-      yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180)) #tick marks for y-axis
-      fig <- levelplot(Z~X*Y, main = sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), xlab = 'Trial', ylab = 'Angular reach deviation (°)', col.regions = col,
+      xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130), cex = 1.5) #tick marks for x-axis
+      yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), cex = 1.5) #tick marks for y-axis
+      ckey <- list(labels = list(cex = 1.5)) #for colour key
+      fig <- levelplot(Z~X*Y, main = list(sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), cex = 1.5), xlab = list('Trial', cex = 1.5), ylab = list('Angular reach deviation (°)', cex = 1.5),
+                       colorkey = ckey, col.regions = col,
                        scales = list(tck = c(1,0), x = xscale, y = yscale),
                        panel = function(...){
                          panel.levelplot(...)

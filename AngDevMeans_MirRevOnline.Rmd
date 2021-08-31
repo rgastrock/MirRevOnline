@@ -9,7 +9,7 @@ output: html_document
 
 This document contains extra analyses conducted to gain a better understanding of the mean values observed in figures containing rates of learning. This way, we can be more confident about the interpretations we make regarding the data.
 
-# Set up the R enviornment
+# Set up the R environment
 
 We have written code that pre-processes the data, plots figures, and runs statistical tests. Import the sources below:
 
@@ -46,7 +46,7 @@ Let's consider just the fall (non-instructed) data set. We observe with the lear
 
 However, when we look at the circular plot for trial 2, the peak of the density distribution seems to be at a higher value than perfect compensation. It is important to note that the peak of this density is not equivalent to the mean, given that the values are distributed all around. Indeed, the mean values for every trial are equivalent to those shown in the 2-D plot. The density distribution peaks are higher at a different value than the mean depending on how many participants have reaches within a particular location. In other words, the peak is representing the mode of the distribution. Note, however, that the peak may not always be the mode, as different locations can have the same frequency values (multiple modes).
 
-# Individual distibutions on a 2-D plot
+# Individual distributions on a 2-D plot
 
 Next, we can investigate the mean values observed in our learning curve figures by simply showing angular reach deviations from every participant, across all trials. We show such a plot for every target location for the two data sets (non-instructed, followed by instructed).
 
@@ -63,10 +63,21 @@ What are those responses not near zero for washout trials? These likely just ref
 
 Interesting things to note: It seems like the bimodal distribution is more evident with the 30 degree target, compared to the 60 degree target. Moreover, we observe a larger "drift" in learning for the 30 degree target. Learning could be dependent on target location then, or how far the target is from the mirror axis. Perhaps the control experiment will provide more insight in relation to this. 
 
+# Heatmaps for each target location
 
+We can also generate heatmaps of these angular reach deviations for each group and target location. For these heatmaps, angles are binned into 10 degrees between -200 to 200 deg. Then each participant's reach deviation for each trial is categorized into these bins. Reach deviations within each bin are then summed to calculate a count/frequency for that bin in each trial. Finally, a heatmap is generated to show the frequency of reach deviations across trials.
 
+## Non-instructed group
+```{r, fig.width = 20, fig.height = 12}
+plotHeatmaps(set='fa2020')
+```
 
+## Instructed group
+```{r, fig.width = 20, fig.height = 12}
+plotHeatmaps(set='su2020')
+```
 
+For both groups, we see that bins with the highest frequency are near zero for aligned and washout trials, and centred near perfect compensation for mirrored trials. Frequencies are more variable for the 60 degree target location, compared to the 30 degree location.
 
 
 
