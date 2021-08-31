@@ -5879,11 +5879,141 @@ plotIndividualAllTasks <- function(groups = c('30', '60'), target='inline', set)
   }
 } #end function
 
+#heatmap for fall data
+group <- '60'
+target <- 'svg'
 
+#but we can save plot as svg file
+if (target=='svg'){
+  svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig1E_%s_Heatmap.svg', group), width=20, height=12, pointsize=20, system_fonts=list(sans="Arial"))
+}
 
-# data <- as.matrix(data[,2:ncol(data)])
-# heatmap(matrix(data, 609, 20), Rowv=NA, Colv=NA)
-# image(data)
+data_AL<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+data_MIR<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+data_RAE<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+data <- rbind(data_AL, data_MIR, data_RAE)
+
+interval <- seq(-200, 200, 10) #group ang devs in bins of 10 degrees each, -200 and 200 due to some values above 180
+alldat <- c()
+for(triali in 1:length(data$trial)){
+  subdat <- data[triali, 2:ncol(data)]
+  subdat <- na.omit(as.numeric(subdat)) #only want to count those without NA values
+  #identify which bin the value corresponds to
+  binfreq <- c()
+  for(numi in subdat){
+    freq <- findInterval(numi, interval, left.open = TRUE) #left.open means interval is from -190 to -199.9, -180 to -189.9, etc.
+    binfreq <- c(binfreq, freq)
+  }
+  
+  #identify counts/frequency per bin
+  yint <- seq(0,40,1) #bins go from 0 to 40, because we go with groups of 10 degrees. 0 and 40 are any values outside of (-200, 200)
+  bincount <- c()
+  for(bini in yint){
+    count <- sum(binfreq == bini)
+    bincount <- c(bincount, count)
+  }
+  
+  trial <- rep(triali, length(yint))
+  ndat <- data.frame(trial, yint, bincount)
+  
+  #append new trials
+  alldat <- rbind(alldat, ndat)
+}
+
+#add column converting bin number to angles
+alldat$angles <- rep(interval, len = length(alldat$yint))
+
+#plot heatmap (use levelplot from lattice package)
+X <- alldat$trial
+Y <- alldat$angles
+Z <- alldat$bincount
+col <- colorRampPalette(brewer.pal(9, "PuBu"))
+xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x-axis
+yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180)) #tick marks for y-axis
+levelplot(Z~X*Y, main = sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), xlab = 'Trial', ylab = 'Angular reach deviation (°)', col.regions = col,
+          scales = list(tck = c(1,0), x = xscale, y = yscale),
+          panel = function(...){
+            panel.levelplot(...)
+            panel.abline(v = c(20, 110), col = 8, lty = 2)
+            if(group == '30'){
+              panel.abline(h = c(0, 120), col = 8, lty = 2)
+            } else if (group == '60'){
+              panel.abline(h = c(0, 60), col = 8, lty = 2)
+            }
+          })
+
+#close everything if you saved plot as svg
+if (target=='svg') {
+  dev.off()
+}
+
+#heatmap for summer data
+group <- '60'
+target <- 'svg'
+
+#but we can save plot as svg file
+if (target=='svg'){
+  svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig1E_%s_Heatmap.svg', group), width=20, height=12, pointsize=20, system_fonts=list(sans="Arial"))
+}
+
+data_AL<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+data_MIR<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+data_RAE<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+data <- rbind(data_AL, data_MIR, data_RAE)
+
+interval <- seq(-200, 200, 10) #group ang devs in bins of 10 degrees each, -200 and 200 due to some values above 180
+alldat <- c()
+for(triali in 1:length(data$trial)){
+  subdat <- data[triali, 2:ncol(data)]
+  subdat <- na.omit(as.numeric(subdat)) #only want to count those without NA values
+  #identify which bin the value corresponds to
+  binfreq <- c()
+  for(numi in subdat){
+    freq <- findInterval(numi, interval, left.open = TRUE) #left.open means interval is from -190 to -199.9, -180 to -189.9, etc.
+    binfreq <- c(binfreq, freq)
+  }
+  
+  #identify counts/frequency per bin
+  yint <- seq(0,40,1) #bins go from 0 to 40, because we go with groups of 10 degrees. 0 and 40 are any values outside of (-200, 200)
+  bincount <- c()
+  for(bini in yint){
+    count <- sum(binfreq == bini)
+    bincount <- c(bincount, count)
+  }
+  
+  trial <- rep(triali, length(yint))
+  ndat <- data.frame(trial, yint, bincount)
+  
+  #append new trials
+  alldat <- rbind(alldat, ndat)
+}
+
+#add column converting bin number to angles
+alldat$angles <- rep(interval, len = length(alldat$yint))
+
+#plot heatmap (use levelplot from lattice package)
+X <- alldat$trial
+Y <- alldat$angles
+Z <- alldat$bincount
+col <- colorRampPalette(brewer.pal(9, "PuBu"))
+xscale <- list(at = c(1, 10, 21, 65, 111, 120, 130)) #tick marks for x-axis
+yscale <- list(at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180)) #tick marks for y-axis
+levelplot(Z~X*Y, main = sprintf("%s° target: Heatmap of angular reach deviations (bin size = 10°)", group), xlab = 'Trial', ylab = 'Angular reach deviation (°)', col.regions = col,
+          scales = list(tck = c(1,0), x = xscale, y = yscale),
+          panel = function(...){
+            panel.levelplot(...)
+            panel.abline(v = c(20, 110), col = 8, lty = 2)
+            if(group == '30'){
+              panel.abline(h = c(0, 120), col = 8, lty = 2)
+            } else if (group == '60'){
+              panel.abline(h = c(0, 60), col = 8, lty = 2)
+            }
+          })
+
+#close everything if you saved plot as svg
+if (target=='svg') {
+  dev.off()
+}
 
 
 
