@@ -193,7 +193,7 @@ getCtrlHandMatches <- function(){
   #These were then manually inspected to see any mismatches
 }
 
-#Learning rates----
+#group according to targets----
 
 #gather reach deviations for all participants, across all trials
 getParticipantLearningCtrl <- function(filename){
@@ -307,7 +307,7 @@ plotAlignedCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   
   if (target=='svg') {
-    svglite(file='data/controlmironline-master/doc/fig/Fig1_AlignedCtrl.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmironline-master/doc/fig/Fig1A_AlignedCtrl.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
   
@@ -365,34 +365,6 @@ plotAlignedCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
     col <- colourscheme[[group]][['S']]
     lines(x = c(46:66), y = mid,col=col,lty=1)
     
-    # #plot Mirrored Data
-    # lower <- groupconfidenceMirrored[,1]
-    # upper <- groupconfidenceMirrored[,3]
-    # mid <- groupconfidenceMirrored[,2]
-    # 
-    # col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    # 
-    # #upper and lower bounds create a polygon
-    # #polygon creates it from low left to low right, then up right to up left -> use rev
-    # #x is just trial nnumber, y depends on values of bounds
-    # polygon(x = c(c(67:156), rev(c(67:156))), y = c(lower, rev(upper)), border=NA, col=col)
-    # col <- colourscheme[[group]][['S']]
-    # lines(x = c(67:156), y = mid,col=col,lty=1)
-    # 
-    # #plot Wahout Data
-    # #take only first, last and middle columns of file
-    # lower <- groupconfidenceRAE[,1]
-    # upper <- groupconfidenceRAE[,3]
-    # mid <- groupconfidenceRAE[,2]
-    # 
-    # col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    # 
-    # #upper and lower bounds create a polygon
-    # #polygon creates it from low left to low right, then up right to up left -> use rev
-    # #x is just trial nnumber, y depends on values of bounds
-    # polygon(x = c(c(157:177), rev(c(157:177))), y = c(lower, rev(upper)), border=NA, col=col)
-    # col <- colourscheme[[group]][['S']]
-    # lines(x = c(157:177), y = mid,col=col,lty=1)
   }
   
   #add legend
@@ -407,13 +379,163 @@ plotAlignedCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
 }
 
 #Mirrored data----
-#baseline biases removed, sign flip for other quadrants
+#baseline biases removed, sign flip if target in other quadrants
+getMirroredParticipantLearningCtrl <- function(filename){
+  
+  dat <- getParticipantLearningCtrl(filename = filename)
+  adat <- dat[which(dat$taskno == 1),] #get only aligned data for first hand
+  mdat <- dat[which(dat$taskno == 3),] #mirrored data
+  
+  biases <- aggregate(circ_rd ~ targetangle_deg, data= adat, FUN = median.circular)
+  #get only biases for locations used in mirrored (quad 1: 5, 45, 85)
+  biases <- biases[which(biases$targetangle_deg == c(5, 45, 85)),]
+  
+  for (biasno in c(1: dim(biases)[1])){ #from 1 to however many biases there are in data
+    
+    target<- biases[biasno, 'targetangle_deg'] #get corresponding target angle
+    bias<- biases[biasno, 'circ_rd'] #get corresponding reachdev or bias
+    
+    #subtract bias from reach deviation for rotated session only
+    mdat$circ_rd[which(mdat$targetangle_deg == target)] <- mdat$circ_rd[which(mdat$targetangle_deg == target)] - bias
+    
+  }
+  return(mdat)
+}
 
+getMirroredGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
+  #group is either 'far', 'mid', 'near' in relation to mirror
+  for(group in groups){
+    datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      mdat <- getMirroredParticipantLearningCtrl(filename = datafilename)
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(mdat$trialno))
+      #adat$trialno <- trial
+      for (triali in trial){
+        #trialdat <- mdat[which(mdat$trialno == triali),]
+        trialdat <- mdat[triali,]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetdist != group){
+          trialdat$circ_rd <- NA
+        }
+        mdat[triali,] <- trialdat
+      }
+      ppreaches <- mdat$circ_rd #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(mdat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    
+    
+    #return(dataoutput)
+    write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), row.names = F)
+  }
+}
 
+getMirroredGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
+  for(group in groups){
+    
+    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    
+    
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl_CI.csv', group), row.names = F) 
+      
+    }
+  }
+}
 
+plotMirCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmironline-master/doc/fig/Fig1B_MirCtrl.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  # create plot
+  meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,91), ylim = c(-200,200), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Mirrored reaches", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  abline(h = c(0, 10, 90, 170), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  axis(1, at = c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90)) #tick marks for x axis
+  axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl_CI.csv', group))
+    
+    colourscheme <- getCtrlColourScheme(groups = group)
+    #plot Mir Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidence[,1]
+    upper <- groupconfidence[,3]
+    mid <- groupconfidence[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:90), rev(c(1:90))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:90), y = mid,col=col,lty=1)
+  }
+  
+  #add legend
+  legend(65,-90,legend=c('far target','mid target', 'near target'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+}
 
-
-
+#Washout data----
 
 
 
