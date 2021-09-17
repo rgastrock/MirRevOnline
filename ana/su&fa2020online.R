@@ -5663,6 +5663,250 @@ plotCircularAllTasks <- function(groups = c('30', '60'), target='inline', set) {
 }
 
 # Generate heatmaps of angular reach deviations across trials----
+
+getParticipantMirrorDistributions <- function(groups = c('30', '60'), target='inline', set){
+  if(set == 'fa2020'){
+    for(group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig1F_%s_ppDistributions.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      data_MIR<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0, 610), ylim = c(-200,200), 
+           xlab = "Participants", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Reach deviation distribution per participant (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 609)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #column names are participant names
+      ppnames <- names(data_MIR[,2:ncol(data_MIR)])
+      for(ppno in 1:length(ppnames)){
+        pp <- ppnames[ppno]
+        subdat <- data_MIR[,pp]
+        
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(subdat)
+        X <- rep(ppno, length(Y))
+        # if(ppno == 1){
+        #   X <- rep(ppno, length(Y))
+        # } else{
+        #   X <- rep(tempX + 4, length(Y))
+        # }
+        
+        points(x=X,y=Y,pch=16,cex=.9,col = alpha('blue', 0.1))
+        #tempX <- unique(X)
+      }
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    }
+  } else if(set == 'su2020'){
+    for(group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig1F_%s_ppDistributions.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      data_MIR<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0, 103), ylim = c(-200,200), 
+           xlab = "Participants", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Reach deviation distribution per participant (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 102)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #column names are participant names
+      ppnames <- names(data_MIR[,2:ncol(data_MIR)])
+      for(ppno in 1:length(ppnames)){
+        pp <- ppnames[ppno]
+        subdat <- data_MIR[,pp]
+        
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(subdat)
+        X <- rep(ppno, length(Y))
+        # if(ppno == 1){
+        #   X <- rep(ppno, length(Y))
+        # } else{
+        #   X <- rep(tempX + 4, length(Y))
+        # }
+        
+        points(x=X,y=Y,pch=16,cex=.9,col = alpha('blue', 0.1))
+        #tempX <- unique(X)
+      }
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    }
+  }
+}
+
+getParticipantWashoutDistributions <- function(groups = c('30', '60'), target='inline', set){
+  if(set == 'fa2020'){
+    for(group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mirrorreversal-fall/doc/fig/Fig1G_%s_ppWashoutDistributions.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      data_MIR<- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0, 610), ylim = c(-200,200), 
+           xlab = "Participants", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Reach deviation distribution per participant (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 609)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #column names are participant names
+      ppnames <- names(data_MIR[,2:ncol(data_MIR)])
+      for(ppno in 1:length(ppnames)){
+        pp <- ppnames[ppno]
+        subdat <- data_MIR[,pp]
+        
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(subdat)
+        X <- rep(ppno, length(Y))
+        # if(ppno == 1){
+        #   X <- rep(ppno, length(Y))
+        # } else{
+        #   X <- rep(tempX + 4, length(Y))
+        # }
+        
+        points(x=X,y=Y,pch=16,cex=.9,col = alpha('blue', 0.1))
+        #tempX <- unique(X)
+      }
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    }
+  } else if(set == 'su2020'){
+    for(group in groups){
+      #but we can save plot as svg file
+      if (target=='svg'){
+        svglite(file=sprintf('data/mReversalNewAlpha3-master/doc/fig/Fig1G_%s_ppWashoutDistributions.svg', group), width=20, height=12, pointsize=14, system_fonts=list(sans="Arial"))
+      }
+      
+      data_MIR<- read.csv(file=sprintf('data/mReversalNewAlpha3-master/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
+      
+      plot(NA, NA, xlim = c(0, 103), ylim = c(-200,200), 
+           xlab = "Participants", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+           main = sprintf("Reach deviation distribution per participant (%s° target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+      if (group == '30'){
+        abline(h = c(0, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+      } else if (group == '60'){
+        abline(h = c(0, 60), col = 8, lty = 2)
+      }
+      axis(1, at = c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 102)) #tick marks for x axis
+      axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+      
+      #column names are participant names
+      ppnames <- names(data_MIR[,2:ncol(data_MIR)])
+      for(ppno in 1:length(ppnames)){
+        pp <- ppnames[ppno]
+        subdat <- data_MIR[,pp]
+        
+        #plot all points (numeric values, not circular)
+        Y <- as.numeric(subdat)
+        X <- rep(ppno, length(Y))
+        # if(ppno == 1){
+        #   X <- rep(ppno, length(Y))
+        # } else{
+        #   X <- rep(tempX + 4, length(Y))
+        # }
+        
+        points(x=X,y=Y,pch=16,cex=.9,col = alpha('blue', 0.1))
+        #tempX <- unique(X)
+      }
+      #close everything if you saved plot as svg
+      if (target=='svg') {
+        dev.off()
+      }
+    }
+  }
+}
+
+plotMirWashParticipantDistributions <- function(set){
+  
+  if(set == 'fa2020'){
+    pdf("data/mirrorreversal-fall/doc/fig/MirWashParticipantDistributions.pdf")
+    
+    data_MIR_30<- read.csv(file='data/mirrorreversal-fall/data/processed/30_CircularLC.csv', check.names = FALSE)
+    data_MIR_60<- read.csv(file='data/mirrorreversal-fall/data/processed/60_CircularLC.csv', check.names = FALSE)
+    data_WASH_30<- read.csv(file='data/mirrorreversal-fall/data/processed/30_CircularRAE.csv', check.names = FALSE)
+    data_WASH_60<- read.csv(file='data/mirrorreversal-fall/data/processed/60_CircularRAE.csv', check.names = FALSE)
+    
+  } else if (set == 'su2020'){
+    pdf("data/mReversalNewAlpha3-master/doc/fig/MirWashParticipantDistributions.pdf")
+    
+    data_MIR_30<- read.csv(file='data/mReversalNewAlpha3-master/data/processed/30_CircularLC.csv', check.names = FALSE)
+    data_MIR_60<- read.csv(file='data/mReversalNewAlpha3-master/data/processed/60_CircularLC.csv', check.names = FALSE)
+    data_WASH_30<- read.csv(file='data/mReversalNewAlpha3-master/data/processed/30_CircularRAE.csv', check.names = FALSE)
+    data_WASH_60<- read.csv(file='data/mReversalNewAlpha3-master/data/processed/60_CircularRAE.csv', check.names = FALSE)
+    
+  }
+  
+  ppnames <- names(data_MIR_30[,2:ncol(data_MIR_30)])
+  for(ppno in 1:length(ppnames)){
+    #print(ppno)
+    plot(NA, NA, xlim = c(0, 8), ylim = c(-200,200), 
+         xlab = "Trial type and target location", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("Reach deviation distribution (ID: %s)", ppnames[ppno]), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    
+    abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y
+    
+    axis(1, at = c(1, 3, 5, 7), labels = c('Mir: 30', 'Wash: 30', 'Mir: 60', 'Wash: 60')) #tick marks for x axis
+    axis(2, at = c(-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180), las = 2) #tick marks for y axis
+    
+    
+    pp <- ppnames[ppno]
+    subdat <- data_MIR_30[,pp]
+    #plot all points (numeric values, not circular)
+    Y <- as.numeric(subdat)
+    X <- rep(1, length(Y))
+    points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+    
+    subdat <- data_WASH_30[,pp]
+    #plot all points (numeric values, not circular)
+    Y <- as.numeric(subdat)
+    X <- rep(3, length(Y))
+    points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+    
+    subdat <- data_MIR_60[,pp]
+    #plot all points (numeric values, not circular)
+    Y <- as.numeric(subdat)
+    X <- rep(5, length(Y))
+    points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+    
+    subdat <- data_WASH_60[,pp]
+    #plot all points (numeric values, not circular)
+    Y <- as.numeric(subdat)
+    X <- rep(7, length(Y))
+    points(x=X,y=Y,pch=16,cex=1.5,col = alpha('blue', 0.1))
+    
+  }
+  dev.off()
+  
+}
+
 plotIndividualAllTasks <- function(groups = c('30', '60'), target='inline', set){
   if (set == 'fa2020'){
     for (group in groups){
