@@ -3,6 +3,35 @@ source('ana/su&fa2020online.R')
 source('ana/qualtricsdata.R')
 source('ana/controlmir.R')
 
+#pre-processing----
+getParticipantMatchedParts <- function(){
+  #This function states participants who are not listed in Part 1, returns null if all data in part 2 also have part 1
+  #get list of id's from Part 1 data
+  qualtdat <- read.csv('data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  ppqualt <- qualtdat$id[-c(1)]
+  
+  #get all filenames in generalizaton/part 2 data
+  datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
+  ppdel <- c()
+  #ppgen <- c()
+  #fdat <- c()
+  for (datafilenum in c(1:length(datafilenames))){
+    
+    filename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum])
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),filename))
+    dat <- handleOneFile(filename = filename)
+    ppdat <- unique(dat$participant)
+    
+    if(ppdat %in% ppqualt == FALSE){
+      ppdel <- c(ppdel, ppdat)
+    }
+  }
+  
+  return(ppdel)
+  
+}
+
+
 #Learning rates----
 
 getParticipantLearningCtrlGen <- function(filename){
