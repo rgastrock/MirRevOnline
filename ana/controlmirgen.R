@@ -19,7 +19,7 @@ getParticipantMatchedParts <- function(){
     
     filename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum])
     cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),filename))
-    dat <- handleOneFile(filename = filename)
+    dat <- handleOneCtrlFile(filename = filename)
     ppdat <- unique(dat$participant)
     
     if(ppdat %in% ppqualt == FALSE){
@@ -31,6 +31,99 @@ getParticipantMatchedParts <- function(){
   
 }
 
+getCtrlMirGenQualtricsData <- function(){
+  datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
+  
+  
+  
+  dataoutput<- c() #create place holder
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    adat <- handleOneCtrlFile(filename = datafilename)
+    ppname <- unique(adat$participant)
+    
+    dataoutput <- c(dataoutput, ppname)
+  }
+  
+  qualt <- read.csv('data/controlmirgenonline-master/qualtrics/ControlMir-SU2021-Part2_June 30, 2021_11.29.csv', stringsAsFactors = F)
+  
+  ndataoutput <- data.frame()
+  for (pp in dataoutput){
+    if(pp %in% qualt$id){
+      ndat <- qualt[which(qualt$id == pp),]
+    }
+    
+    if (prod(dim(ndataoutput)) == 0){
+      ndataoutput <- ndat
+    } else {
+      ndataoutput <- rbind(ndataoutput, ndat)
+    }
+  }
+  
+  row1qualt <- qualt[1,]
+  alldat <- rbind(row1qualt, ndataoutput)
+  write.csv(alldat, file='data/controlmirgenonline-master/qualtrics/CtrlMirGen_Qualtrics_ParticipantList.csv', row.names = F)
+  
+}
+
+getCtrlGenHandMatches <- function(){
+  #check hand matches both within and across sessions
+  datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
+  
+  #within: check if the key response they entered during the experiment, matches their qualtrics response
+  allresp <- data.frame()
+  for(datafilenum in c(1:length(datafilenames))){
+    
+    datafilename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+    
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    df <- read.csv(datafilename, stringsAsFactors = F)
+    ppname <- unique(df$participant)
+    p2_keyresp <- df$intrResp.keys[which(df$intrResp.keys != "")] #remove empty strings
+    p2_keyresp <- paste(p2_keyresp, collapse=",") #collapse as one string
+    ppresp <- data.frame(ppname, p2_keyresp) #collect with participant id
+    
+    allresp <- rbind(allresp, ppresp)
+  }
+  
+  ctrlmirdat <- read.csv('data/controlmirgenonline-master/qualtrics/CtrlMirGen_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  
+  qualtresp <- data.frame()
+  for(pp in allresp$ppname){
+    subdat <- ctrlmirdat[which(ctrlmirdat$id == pp),]
+    ppname <- pp
+    p2_handresp <- subdat$Q5.2 #response to hand switching
+    qualtppresp <- data.frame(ppname, p2_handresp)
+    
+    qualtresp <- rbind(qualtresp, qualtppresp)
+  }
+  
+  p2_handmatches <- merge(allresp, qualtresp, by='ppname')
+  
+  #across: check if the trained hand is consistent across sessions
+  p1_ctrlmirdat <- read.csv('data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  
+  p1_qualtresp <- data.frame()
+  for(pp in allresp$ppname){
+    subdat <- p1_ctrlmirdat[which(p1_ctrlmirdat$id == pp),]
+    ppname <- pp
+    p1_handedness <- subdat$Q2.5 #what is their handedness
+    p1_comphand <- subdat$Q3.3 #which hand they typically use for controlling mouse
+    p1_handresp <- subdat$Q8.2 #response to hand switching
+    p1_qualtppresp <- data.frame(ppname, p1_handedness, p1_comphand, p1_handresp)
+    
+    p1_qualtresp <- rbind(p1_qualtresp, p1_qualtppresp)
+  }
+  
+  handmatches <- merge(p1_qualtresp, p2_handmatches, by='ppname')
+  
+  write.csv(handmatches, file='data/controlmirgenonline-master/data/processed/HandMatches.csv', row.names = F)
+  #These were then manually inspected to see any mismatches
+}
 
 #Learning rates----
 
