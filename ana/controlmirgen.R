@@ -125,6 +125,108 @@ getCtrlGenHandMatches <- function(){
   #These were then manually inspected to see any mismatches
 }
 
+# Time between Part 1 and Part 2----
+getCtrlDateOneFile <- function(filename){
+  
+  #each participant would have a date of completion in their raw file
+  # if the file can't be read, return empty list for now
+  df <- NULL
+  try(df <- read.csv(filename, stringsAsFactors = F), silent = TRUE)
+  if (is.null(df)) {
+    return(list())
+  }
+  
+  date <- unique(df$date)
+  id <- unique(df$participant)
+  
+  # vectors as data frame columns:
+  dfid <- data.frame(id, date)
+  
+  return(dfid)
+}
+
+getCtrlGroupDates<- function(sets = c('part1', 'part2')){
+  
+  for (set in sets){
+    if (set == 'part1'){
+      datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+    } else if (set == 'part2'){
+      datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
+    }
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      if (set == 'part1'){
+        datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      } else if (set == 'part2'){
+        datafilename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      }
+      
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      alldat <- getCtrlDateOneFile(filename = datafilename)
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- alldat
+      } else {
+        dataoutput <- rbind(dataoutput, alldat)
+      }
+    }
+    #return(dataoutput)
+    if (set == 'part1'){
+      write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%sDate.csv', set), row.names = F)
+    } else if (set == 'part2'){
+      write.csv(dataoutput, file=sprintf('data/controlmirgenonline-master/data/processed/%sDate.csv', set), row.names = F)
+    }
+  }
+}
+
+getCtrlMatchGroupDates <- function(){
+  
+  part1dat <- read.csv(file='data/controlmironline-master/data/processed/part1Date.csv')
+  part2dat <- read.csv(file='data/controlmirgenonline-master/data/processed/part2Date.csv')
+  
+  dat <- merge(part1dat, part2dat, by.x = 'id', by.y = 'id')
+  colnames(dat) <- c('id', 'part1_date', 'part2_date')
+  
+  dat$days <- as.numeric(as.Date(dat$part2_date) - as.Date(dat$part1_date))
+  
+  #dat[which(dat$days == 0),] #remove those who did it within a few hours
+  
+  return(dat)
+  
+}
+
+plotCtrlDaysApart <- function(target='inline'){
+  
+  #but we can save plot as svg file
+  if (target=='svg') {
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig0_HistDaysApart.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  dat <- getCtrlMatchGroupDates()
+  width <- max(dat$days) - min(dat$days) #breaks is how many days are accounted for by each bar, so width here would be 1 day per bar
+  
+  hist(dat$days, breaks = width, main = 'Histogram for number of days between Parts 1 and 2',
+       xlab = 'Days', ylab = 'Frequency of participants', axes=FALSE, xlim=c(0,20),ylim=c(0,45))
+  axis(1, at = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20))
+  axis(2, at = c(0, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45), las=2) #tick marks for y axis
+  
+  cat(sprintf('mean: %s days apart \n',mean(dat$days)))
+  cat(sprintf('sd: %s days apart \n',sd(dat$days)))
+  cat(sprintf('median: %s days apart \n',median(dat$days)))
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+}
+
+#Baseline correction----
+
+
 #Learning rates----
 
 getParticipantLearningCtrlGen <- function(filename){
