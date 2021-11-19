@@ -224,7 +224,333 @@ plotCtrlDaysApart <- function(target='inline'){
   
 }
 
-#Baseline correction----
+#Baseline correction/ Part 2 Learning Rates & Washout----
+
+getAlignedGroupLearningCtrlGen <- function(){
+  #get part 1 aligned reach data for participants in part 2
+  # participant list is based off of participants who did part 2 (less than part 1)
+  qualtdat <- read.csv('data/controlmirgenonline-master/qualtrics/CtrlMirGen_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  ppqualt <- qualtdat$id[-c(1)]
+  
+  #get all filenames in part 1
+  datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+  part1dat <- data.frame()
+  for (datafilenum in c(1:length(datafilenames))){
+    
+    filename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum])
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),filename))
+    dat <- handleOneCtrlFile(filename = filename)
+    ppdat <- unique(dat$participant)
+    
+    if(ppdat %in% ppqualt){
+      adat <- getParticipantLearningCtrl(filename = filename) #grab part 1 data
+      adat <- adat[which(adat$taskno == 1 | adat$taskno == 2),] #grab the aligned for both hands
+    }
+    part1dat <- rbind(part1dat, adat)
+  }
+  #return(part1dat)
+  write.csv(part1dat, file='data/controlmirgenonline-master/data/processed/Part1_Aligned.csv', row.names = F)
+}
+
+getMirroredParticipantLearningCtrlGen <- function(filename){
+  #part 2 data
+  dat <- getParticipantLearningCtrl(filename = filename)
+  ppid <- unique(dat$participant) #to easily subset part 1 data later
+  #split part 2 into tasks 1 (trained hand) and 2 (untrained hand) to baseline correct separately
+  task1dat <- dat[which(dat$taskno == 1),]
+  task2dat <- dat[which(dat$taskno == 2),]
+  
+  #part 1 data
+  #can grab all part 1 data from previous function
+  adat <- read.csv('data/controlmirgenonline-master/data/processed/Part1_Aligned.csv', stringsAsFactors = F)
+  #convert data to circular
+  adat$circ_rd <- as.circular(adat$circ_rd, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+  adat <- adat[which(adat$participant == ppid),] #get only aligned data for participant
+  #split part 1 (baseline) into tasks 1 (trained hand) and 2 (untrained hand) to baseline correct separately
+  task1adat <- adat[which(adat$taskno == 1),]
+  task2adat <- adat[which(adat$taskno == 2),]
+  
+  #Task 1: remove biases
+  biases <- aggregate(circ_rd ~ targetangle_deg, data= task1adat, FUN = median.circular)
+  #get only biases for locations used in mirrored (quad 1: 5, 45, 85)
+  #biases <- biases[which(biases$targetangle_deg == c(5, 45, 85)),]
+  
+  for (biasno in c(1: dim(biases)[1])){ #from 1 to however many biases there are in data
+    
+    target<- biases[biasno, 'targetangle_deg'] #get corresponding target angle
+    bias<- biases[biasno, 'circ_rd'] #get corresponding reachdev or bias
+    
+    #subtract bias from reach deviation for rotated session only
+    task1dat$circ_rd[which(task1dat$targetangle_deg == target)] <- task1dat$circ_rd[which(task1dat$targetangle_deg == target)] - bias
+    
+  }
+  
+  #Task 2: remove biases
+  biases <- aggregate(circ_rd ~ targetangle_deg, data= task2adat, FUN = median.circular)
+  #get only biases for locations used in mirrored (quad 1: 5, 45, 85)
+  #biases <- biases[which(biases$targetangle_deg == c(5, 45, 85)),]
+  
+  for (biasno in c(1: dim(biases)[1])){ #from 1 to however many biases there are in data
+    
+    target<- biases[biasno, 'targetangle_deg'] #get corresponding target angle
+    bias<- biases[biasno, 'circ_rd'] #get corresponding reachdev or bias
+    
+    #subtract bias from reach deviation for rotated session only
+    task2dat$circ_rd[which(task2dat$targetangle_deg == target)] <- task2dat$circ_rd[which(task2dat$targetangle_deg == target)] - bias
+    
+  }
+  #combine baseline corrected tasks
+  ndat <- rbind(task1dat, task2dat)
+  return(ndat)
+}
+  
+getMirroredGroupLearningCtrlGen <- function(groups = c('far', 'mid', 'near')){
+  #group is either 'far', 'mid', 'near' in relation to mirror
+  for(group in groups){
+    datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      datafilename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      mdat <- getMirroredParticipantLearningCtrlGen(filename = datafilename)
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(mdat$trialno))
+      #adat$trialno <- trial
+      for (triali in trial){
+        #trialdat <- mdat[which(mdat$trialno == triali),]
+        trialdat <- mdat[triali,]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetdist != group){
+          trialdat$circ_rd <- NA
+        }
+        mdat[triali,] <- trialdat
+      }
+      ppreaches <- mdat$circ_rd #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(mdat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    
+    
+    #return(dataoutput)
+    write.csv(dataoutput, file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv', group), row.names = F)
+  }
+}
+  
+getMirroredGroupLearningCtrlGenCI <- function(groups = c('far', 'mid', 'near')){
+  for(group in groups){
+    
+    data <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    
+    
+    
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      
+      write.csv(confidence, file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen_CI.csv', group), row.names = F) 
+      
+    }
+  }
+}
+  
+plotLearningCtrlGen <- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1_LearningCtrlGen.svg', width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  # create plot
+  meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,127), ylim = c(-185,185), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  
+  lim <- par('usr')
+  rect(85, lim[3]-1, 126, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
+  abline(h = c(0), v = c(21, 42, 63, 84, 105), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  
+  #we could color code the dashed lines at perfect compensation, but washout needs to be grey
+  perfnear <- rep(10, 105) #add 5 points to either side to extend the line
+  lines(x = c(1:105), y = perfnear, col = '#ff8200ff', lty = 2)
+  
+  perfmid <- rep(90, 105) #add 5 points to either side to extend the line
+  lines(x = c(1:105), y = perfmid, col = '#e51636ff', lty = 2)
+  
+  perffar <- rep(170, 105) #add 5 points to either side to extend the line
+  lines(x = c(1:105), y = perffar, col = '#c400c4ff', lty = 2) 
+  #then add grey lines before trials
+  greynear <- rep(10, 7) #7 is however many the x axis values are
+  lines(x = c(-5:1), y = greynear, col = 8, lty = 2) #5 x values before 0
+  greymid <- rep(90, 7) #7 is however many the x axis values are
+  lines(x = c(-5:1), y = greymid, col = 8, lty = 2) #5 x values before 0
+  greyfar <- rep(170, 7) #7 is however many the x axis values are
+  lines(x = c(-5:1), y = greyfar, col = 8, lty = 2)
+  #grey lines at washout
+  greynear <- rep(10, 27) 
+  lines(x = c(105:131), y = greynear, col = 8, lty = 2) 
+  greymid <- rep(90, 27) 
+  lines(x = c(105:131), y = greymid, col = 8, lty = 2) 
+  greyfar <- rep(170, 27) 
+  lines(x = c(105:131), y = greyfar, col = 8, lty = 2) 
+  
+  axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
+  axis(2, at = c(-170, -130, -90, -50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
+  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
+  
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidence <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen_CI.csv', group))
+    
+    #split up data set for plotting purposes
+    groupconfidenceQ1 <- groupconfidence[1:21,]
+    groupconfidenceQ4 <- (groupconfidence[22:42,])*-1 #sign flip because correction is in negative direction
+    groupconfidenceQ2 <- (groupconfidence[43:63,])*-1 #sign flip
+    groupconfidenceQ1A <- groupconfidence[64:84,]
+    groupconfidenceSQ1 <- groupconfidence[85:105,]
+    groupconfidenceWQ1 <- groupconfidence[106:126,]
+    
+    colourscheme <- getCtrlColourScheme(groups = group)
+    #plot Q1 Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceQ1[,1]
+    upper <- groupconfidenceQ1[,3]
+    mid <- groupconfidenceQ1[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:21), rev(c(1:21))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:21), y = mid,col=col,lty=1)
+    
+    #plot Q4 Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceQ4[,1]
+    upper <- groupconfidenceQ4[,3]
+    mid <- groupconfidenceQ4[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(22:42), rev(c(22:42))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(22:42), y = mid,col=col,lty=1)
+    
+    #plot Q2 Data
+    lower <- groupconfidenceQ2[,1]
+    upper <- groupconfidenceQ2[,3]
+    mid <- groupconfidenceQ2[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(43:63), rev(c(43:63))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(43:63), y = mid,col=col,lty=1)
+    
+    #plot Q1A Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceQ1A[,1]
+    upper <- groupconfidenceQ1A[,3]
+    mid <- groupconfidenceQ1A[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(64:84), rev(c(64:84))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(64:84), y = mid,col=col,lty=1)
+    
+    #plot SQ1 Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceSQ1[,1]
+    upper <- groupconfidenceSQ1[,3]
+    mid <- groupconfidenceSQ1[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(85:105), rev(c(85:105))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(85:105), y = mid,col=col,lty=1)
+    
+    #plot WQ1 Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceWQ1[,1]
+    upper <- groupconfidenceWQ1[,3]
+    mid <- groupconfidenceWQ1[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(106:126), rev(c(106:126))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(106:126), y = mid,col=col,lty=1)
+  }
+  
+  #add legend
+  legend(106,-90,legend=c('far target','mid target', 'near target'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+  
+  
+  
+}
 
 
 #Learning rates----
@@ -333,140 +659,3 @@ getGroupLearningCtrlGenConfInt <- function(groups = c('far', 'mid', 'near')){
   }
 }
 
-plotLearningCtrlGen <- function(groups = c('far', 'mid', 'near'), target='inline') {
-  
-  
-  if (target=='svg') {
-    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1_LearningCtrlGen.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
-  }
-  
-  
-  
-  # create plot
-  meanGroupReaches <- list() #empty list so that it plots the means last
-  
-  #NA to create empty plot
-  # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(0,127), ylim = c(-185,185), 
-       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
-       main = "Rate of learning per target location", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
-  abline(h = c(-170, -90, -10, 0, 10, 90, 170), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
-  axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
-  axis(2, at = c(-170, -130, -90, -50, -10, 0, 10, 50, 90, 130, 170)) #tick marks for y axis
-  
-  for(group in groups){
-    #read in files created by getGroupConfidenceInterval in filehandling.R
-    groupconfidence <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_LearningCtrlGen_CI.csv', group))
-    
-    #split up data set for plotting purposes
-    groupconfidenceQ1 <- groupconfidence[1:21,]
-    groupconfidenceQ4 <- groupconfidence[22:42,]
-    groupconfidenceQ2 <- groupconfidence[43:63,]
-    groupconfidenceQ1A <- groupconfidence[64:84,]
-    groupconfidenceSQ1 <- groupconfidence[85:105,]
-    groupconfidenceWQ1 <- groupconfidence[106:126,]
-    
-    colourscheme <- getCtrlColourScheme(groups = group)
-    #plot Q1 Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceQ1[,1]
-    upper <- groupconfidenceQ1[,3]
-    mid <- groupconfidenceQ1[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(1:21), rev(c(1:21))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(1:21), y = mid,col=col,lty=1)
-    
-    #plot Q4 Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceQ4[,1]
-    upper <- groupconfidenceQ4[,3]
-    mid <- groupconfidenceQ4[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(22:42), rev(c(22:42))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(22:42), y = mid,col=col,lty=1)
-    
-    #plot Q2 Data
-    lower <- groupconfidenceQ2[,1]
-    upper <- groupconfidenceQ2[,3]
-    mid <- groupconfidenceQ2[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(43:63), rev(c(43:63))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(43:63), y = mid,col=col,lty=1)
-    
-    #plot Q1A Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceQ1A[,1]
-    upper <- groupconfidenceQ1A[,3]
-    mid <- groupconfidenceQ1A[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(64:84), rev(c(64:84))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(64:84), y = mid,col=col,lty=1)
-    
-    #plot SQ1 Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceSQ1[,1]
-    upper <- groupconfidenceSQ1[,3]
-    mid <- groupconfidenceSQ1[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(85:105), rev(c(85:105))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(85:105), y = mid,col=col,lty=1)
-    
-    #plot WQ1 Data
-    #take only first, last and middle columns of file
-    lower <- groupconfidenceWQ1[,1]
-    upper <- groupconfidenceWQ1[,3]
-    mid <- groupconfidenceWQ1[,2]
-    
-    col <- colourscheme[[group]][['T']] #use colour scheme according to group
-    
-    #upper and lower bounds create a polygon
-    #polygon creates it from low left to low right, then up right to up left -> use rev
-    #x is just trial nnumber, y depends on values of bounds
-    polygon(x = c(c(106:126), rev(c(106:126))), y = c(lower, rev(upper)), border=NA, col=col)
-    col <- colourscheme[[group]][['S']]
-    lines(x = c(106:126), y = mid,col=col,lty=1)
-  }
-  
-  #add legend
-  legend(60,25,legend=c('far target','mid target', 'near target'),
-         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
-         lty=1,bty='n',cex=1,lwd=2)
-  
-  #close everything if you saved plot as svg
-  if (target=='svg') {
-    dev.off()
-  }
-  
-  
-  
-}
