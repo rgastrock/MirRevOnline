@@ -834,44 +834,44 @@ plotCtrlGenCircFreq <- function(groups = c('far', 'mid', 'near')){
       if(group == 'far'){
         plot(distsubdat, main = sprintf('Far target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
              shrink=1.5, points.plot = TRUE, points.col=4, col=4)
-        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        perfcomp <- as.circular(170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        #nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        #arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
         arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
         
-        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
-               col=c('#FF0000','#00FF00'),
+        legend(-1.5,-1.25,legend=c('perfect compensation'),
+               col=c('#00FF00'),
                lty=1,bty='n',cex=1)
       } else if (group == 'mid'){
         plot(distsubdat, main = sprintf('Mid target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
              shrink=1.5, points.plot = TRUE, points.col=4, col=4)
-        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        perfcomp <- as.circular(90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        #nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        #arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
         arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
         
-        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
-               col=c('#FF0000','#00FF00'),
+        legend(-1.5,-1.25,legend=c('perfect compensation'),
+               col=c('#00FF00'),
                lty=1,bty='n',cex=1)
       } else if (group == 'near'){
         plot(distsubdat, main = sprintf('Near target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
              shrink=1.5, points.plot = TRUE, points.col=4, col=4)
-        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        perfcomp <- as.circular(10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        #nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        #arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
         arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
         #points.circular(rd, pch = 15, col = 'red')
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
         #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
         
-        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
-               col=c('#FF0000','#00FF00'),
+        legend(-1.5,-1.25,legend=c('perfect compensation'),
+               col=c('#00FF00'),
                lty=1,bty='n',cex=1)
       }
     }
