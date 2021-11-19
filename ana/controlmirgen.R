@@ -547,115 +547,341 @@ plotLearningCtrlGen <- function(groups = c('far', 'mid', 'near'), target='inline
   if (target=='svg') {
     dev.off()
   }
-  
-  
-  
 }
 
-
-#Learning rates----
-
-getParticipantLearningCtrlGen <- function(filename){
+#circular density distributions----
+plotCtrlGenCircFreq <- function(groups = c('far', 'mid', 'near')){
   
-  #first, implement baseline correction - this is commented out because other targets do not have baseline, we baseline correct for retention plot below
-  #get Aligned biases
-  dat <- handleOneCtrlFile(filename = filename)
-  dat$circ_rd <- as.circular(dat$reachdeviation_deg, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-  
-  targetdist <- c()
-  for (target in dat$targetangle_deg){
-    if (target %in% c(5, 175, 355)){
-      dist <- 'far'
-      targetdist <- c(targetdist, dist)
-    } else if (target %in% c(45, 135, 315)){
-      dist <- 'mid'
-      targetdist <- c(targetdist, dist)
-    } else if (target %in% c(85, 95, 275)){
-      dist <- 'near'
-      targetdist <- c(targetdist, dist)
-    }
-  }
-  dat$targetdist <- targetdist
-  
-  return(dat)
-}
-
-getGroupLearningCtrlGen <- function(groups = c('far', 'mid', 'near')){
-  #group is either 'far', 'mid', 'near'
-  for(group in groups){
-    datafilenames <- list.files('data/controlmirgenonline-master/data', pattern = '*.csv')
-    
-    
-    dataoutput<- data.frame() #create place holder
-    for(datafilenum in c(1:length(datafilenames))){
-      datafilename <- sprintf('data/controlmirgenonline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
-      
-      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
-      adat <- getParticipantLearningCtrl(filename = datafilename)
-      # per target location, get reachdev for corresponding trials
-      
-      trial <- c(1:length(adat$trialno))
-      adat$trialno <- trial
-      for (triali in trial){
-        trialdat <- adat[which(adat$trialno == triali),]
-        #set reachdev to NA if not the target location we want
-        if (trialdat$targetdist != group){
-          trialdat$circ_rd <- NA
-        }
-        adat[triali,] <- trialdat
-      }
-      ppreaches <- adat$circ_rd #get reach deviations column from learning curve data
-      ppdat <- data.frame(trial, ppreaches)
-      
-      ppname <- unique(adat$participant)
-      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
-      
-      if (prod(dim(dataoutput)) == 0){
-        dataoutput <- ppdat
-      } else {
-        dataoutput <- cbind(dataoutput, ppreaches)
-        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
-      }
-    }
-    
-    
-    #return(dataoutput)
-    write.csv(dataoutput, file=sprintf('data/controlmirgenonline-master/data/processed/%s_LearningCtrlGen.csv', group), row.names = F)
-  }
-}
-
-getGroupLearningCtrlGenConfInt <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
     
-    data <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_LearningCtrlGen.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    dat <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
     
+    pdf(sprintf("data/controlmirgenonline-master/doc/fig/Distribution_%s_MirCtrlGen.pdf", group))
     
-    
-    #current fix for summer data being non-randomized and not counterbalanced
-    trialno <- data$trial
-    
-    confidence <- data.frame()
-    
-    for(trial in trialno){
-      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
-      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
-      
-      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
-        citrial <- as.numeric(c(NA,NA,NA))
-      } else{
-        citrial <- getCircularConfidenceInterval(data = circ_subdat)
-        citrial <- as.numeric(citrial)
+    #Quad 1
+    triallist <- c(1:21)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
       }
-      
-      if (prod(dim(confidence)) == 0){
-        confidence <- citrial
-      } else {
-        confidence <- rbind(confidence, citrial)
-      }
-      
-      write.csv(confidence, file=sprintf('data/controlmirgenonline-master/data/processed/%s_LearningCtrlGen_CI.csv', group), row.names = F) 
-      
     }
+    
+    #Quad 4
+    triallist <- c(22:42)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    
+    #Quad 2
+    triallist <- c(43:63)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(-10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    
+    #Quad 1 top up
+    triallist <- c(64:84)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    
+    #Quad 1: Switch hands
+    triallist <- c(85:105)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target, switch hand: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target, switch hand: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target, switch hand: Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    
+    #Quad 1: washout
+    triallist <- c(106:126)
+    for(triali in triallist){
+      subdat <- dat[which(dat$trial == triali),]
+      subdat <- as.numeric(subdat[,2:ncol(subdat)])
+      subdat <- as.circular(subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      #print(mean.circular(subdat, na.rm=T))
+      distsubdat <- density.circular(subdat, na.rm = TRUE, bw = 15)
+      if(group == 'far'){
+        plot(distsubdat, main = sprintf('Far target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(170, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'mid'){
+        plot(distsubdat, main = sprintf('Mid target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(90, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      } else if (group == 'near'){
+        plot(distsubdat, main = sprintf('Near target, switch hand (washout): Trial %s', triali), plot.type = 'circle', 
+             shrink=1.5, points.plot = TRUE, points.col=4, col=4)
+        nocomp <- as.circular(0, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        perfcomp <- as.circular(10, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+        arrows.circular(nocomp, length = 0, angle = 0, col = '#FF0000')
+        arrows.circular(perfcomp, length = 0, angle = 0, col = '#00FF00')
+        #points.circular(rd, pch = 15, col = 'red')
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=0.85)
+        #lines(distsubdat, points.plot=TRUE, col=4, points.col=4, shrink=1.5)
+        
+        legend(-1.5,-1.25,legend=c('no compensation','perfect compensation'),
+               col=c('#FF0000','#00FF00'),
+               lty=1,bty='n',cex=1)
+      }
+    }
+    
+    dev.off()
+    
   }
 }
+
+#movement time----
+
+
 
