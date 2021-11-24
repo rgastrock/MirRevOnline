@@ -2591,7 +2591,51 @@ plotTrialOneDensityMoveThroughs <- function(target='inline', trials = c(1, 81)){
   }
 }
 
+# Comparing devices used: Mouse vs trackpad----
+getDeviceGenCI<- function(devices = c('Mouse', 'Trackpad')){
+  
+  for(device in devices){
+    #get qualtrics response to device used
+    qualtdat <- read.csv('data/mirrorgeneralization-master/qualtrics/Part2_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to device
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$id
+    
+    dat <- read.csv(file='data/mirrorgeneralization-master/data/processed/LearningGen.csv', check.names = FALSE) #check.names allows us to keep pp id as headers
+    trial <- dat$trial
+    #targetangle_deg <- dat$targetangle_deg
+    ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+    #data <- cbind(trial, targetangle_deg, ndat)
+    data <- cbind(trial, ndat)
 
+    
+    #get CIs
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+      
+      if(length(unique(circ_subdat)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        citrial <- getCircularConfidenceInterval(data = circ_subdat)
+        citrial <- as.numeric(citrial)
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      
+      write.csv(confidence, file=sprintf('data/mirrorgeneralization-master/data/processed/LearningGen_CI_%s.csv', device), row.names = F)
+      
+    }
+  }
+}
 
 
 
