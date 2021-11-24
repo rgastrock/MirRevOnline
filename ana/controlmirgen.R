@@ -1575,4 +1575,3 @@ plotCtrlGenHeatmaps <- function(groups = c('far', 'mid', 'near'), target = 'inli
   }
 }
 
-#device and sex-based analyses to be added
