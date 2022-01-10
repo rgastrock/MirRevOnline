@@ -447,6 +447,15 @@ getMirroredGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
   }
 }
 
+# fix to CI's
+# for every trial, get reachdev for each pp, convert to radians
+# sin(rad) is y, cos(rad) is x
+# summation of all y and x
+# atan2 -> one radian value, convert to degrees
+# bootstrap this for 1000 times, using different participants per iteration
+# can get lower, mid, upper values for CI
+# do for all targets
+
 getMirroredGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
     
