@@ -447,14 +447,66 @@ getMirroredGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
   }
 }
 
-# fix to CI's
-# for every trial, get reachdev for each pp, convert to radians
-# sin(rad) is y, cos(rad) is x
-# summation of all y and x
-# atan2 -> one radian value, convert to degrees
-# bootstrap this for 1000 times, using different participants per iteration
-# can get lower, mid, upper values for CI
-# do for all targets
+getAngularReachDevsCI <- function(data, resamples = 1000){
+  
+  #CI's generated for far target are very wide, given the negative or positive directions in circular values
+  #To fix this, we can generate angular reach deviations using x and y coordinates instead
+  #We bootstrap with replacement, so that we can generate lower, mid, upper values for CI
+  data <- data[which(is.finite(data))]
+  samplematrix <- matrix(sample(data, size = resamples*length(data), replace = TRUE), nrow = resamples)
+  BS <- c()
+  for (irow in 1:nrow(samplematrix)){
+    subdat <- samplematrix[irow,]
+    #convert reach deviations from degrees to radians
+    degtorad <- (subdat / 180) * pi
+    #sin of radians values will be y values, cos will be x
+    yvals <- sin(degtorad)
+    xvals <- cos(degtorad)
+    #summation of all y and x values to be passed on to atan2, then converted to degrees
+    y <- sum(yvals)
+    x <- sum(xvals)
+    rd <- (atan2(y,x) / pi) * 180
+    
+    # BS should have as much as resamples (i.e. 1000)
+    BS <- as.numeric(c(BS, rd))
+  }
+  
+  return(quantile(BS, probs = c(0.025, 0.50, 0.975)))
+}
+
+nameThisFunc <- function(){
+  
+  group <- 'far'
+  data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  
+  trialno <- data$trial
+  
+  confidence <- data.frame()
+  
+  for(trial in trialno){
+    subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+    citrial <- getAngularReachDevsCI(data = subdat)
+
+    if (prod(dim(confidence)) == 0){
+      confidence <- citrial
+    } else {
+      confidence <- rbind(confidence, citrial)
+    }
+    
+  }
+  
+#finish this function by saving as csv
+#replot figure, comment out circular CI function
+#do for aligned and washout as well
+#apply for gen experiment
+  
+  
+  
+  
+}
+
+
+
 
 getMirroredGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
