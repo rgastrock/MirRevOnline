@@ -447,7 +447,7 @@ getMirroredGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
   }
 }
 
-getAngularReachDevsCI <- function(data, resamples = 1000){
+getAngularReachDevsCI <- function(data, group, resamples = 1000){
   
   #CI's generated for far target are very wide, given the negative or positive directions in circular values
   #To fix this, we can generate angular reach deviations using x and y coordinates instead
@@ -470,6 +470,14 @@ getAngularReachDevsCI <- function(data, resamples = 1000){
     # BS should have as much as resamples (i.e. 1000)
     BS <- as.numeric(c(BS, rd))
   }
+  #wide CI's are generated for far group after atan2 (i.e. -178 should be the same as 182 in a 2D plot)
+  #to fix for this, we add 360 for bootstrapped values below -90 for only the far group
+  for (angleidx in 1:length(BS)){
+    angle <- BS[angleidx]
+    if (group == 'far' && angle < -90){
+      BS[angleidx] <- angle + 360
+    }
+  }
   
   return(quantile(BS, probs = c(0.025, 0.50, 0.975)))
 }
@@ -485,7 +493,7 @@ getMirroredGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
     
     for(trial in trialno){
       subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
-      citrial <- getAngularReachDevsCI(data = subdat)
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
       
       if (prod(dim(confidence)) == 0){
         confidence <- citrial
@@ -546,12 +554,12 @@ plotMirCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   #NA to create empty plot
   # could maybe use plot.new() ?
-  plot(NA, NA, xlim = c(0,91), ylim = c(-200,200), 
+  plot(NA, NA, xlim = c(0,91), ylim = c(-65,225), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
        main = "Mirrored reaches", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   abline(h = c(0, 10, 90, 170), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
   axis(1, at = c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90)) #tick marks for x axis
-  axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  axis(2, at = c(-60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
   
   for(group in groups){
     #read in files created by getGroupConfidenceInterval in filehandling.R
@@ -575,7 +583,7 @@ plotMirCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   }
   
   #add legend
-  legend(65,-90,legend=c('far target','mid target', 'near target'),
+  legend(65,-15,legend=c('far target','mid target', 'near target'),
          col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
          lty=1,bty='n',cex=1,lwd=2)
   
