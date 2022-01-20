@@ -80,6 +80,41 @@ handleOneCtrlFile <- function(filename) {
   return(dfrd)
 }
 
+getAngularReachDevsCI <- function(data, group, resamples = 1000){
+  
+  #CI's generated for far target are very wide, given the negative or positive directions in circular values
+  #To fix this, we can generate angular reach deviations using x and y coordinates instead
+  #We bootstrap with replacement, so that we can generate lower, mid, upper values for CI
+  data <- data[which(is.finite(data))]
+  samplematrix <- matrix(sample(data, size = resamples*length(data), replace = TRUE), nrow = resamples)
+  BS <- c()
+  for (irow in 1:nrow(samplematrix)){
+    subdat <- samplematrix[irow,]
+    #convert reach deviations from degrees to radians
+    degtorad <- (subdat / 180) * pi
+    #sin of radians values will be y values, cos will be x
+    yvals <- sin(degtorad)
+    xvals <- cos(degtorad)
+    #summation of all y and x values to be passed on to atan2, then converted to degrees
+    y <- sum(yvals)
+    x <- sum(xvals)
+    rd <- (atan2(y,x) / pi) * 180
+    
+    # BS should have as much as resamples (i.e. 1000)
+    BS <- as.numeric(c(BS, rd))
+  }
+  #wide CI's are generated for far group after atan2 (i.e. -178 should be the same as 182 in a 2D plot)
+  #to fix for this, we add 360 for bootstrapped values below -90 for only the far group
+  for (angleidx in 1:length(BS)){
+    angle <- BS[angleidx]
+    if (group == 'far' && angle < -90){
+      BS[angleidx] <- angle + 360
+    }
+  }
+  
+  return(quantile(BS, probs = c(0.025, 0.50, 0.975)))
+}
+
 #Use experimental data for those that also have qualtrics data
 getCtrlMirWithoutQualtrics <- function(){
   
@@ -267,8 +302,30 @@ getAlignedGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
   }
 }
 
-
 getAlignedGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
+  
+  for(group in groups){
+    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group), row.names = F)
+    }
+  }
+}
+
+getAlignedGroupLearningCtrlCircularCI <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
     
     data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
@@ -297,7 +354,7 @@ getAlignedGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
         confidence <- rbind(confidence, citrial)
       }
 
-      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group), row.names = F) 
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_Circular_CI.csv', group), row.names = F) 
       
     }
   }
@@ -327,6 +384,81 @@ plotAlignedCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   for(group in groups){
     #read in files created by getGroupConfidenceInterval in filehandling.R
     groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group))
+    
+    #split up data set for plotting purposes
+    groupconfidenceAligned <- groupconfidence[1:45,]
+    groupconfidenceLeftAligned <- groupconfidence[46:66,]
+    #groupconfidenceMirrored <- groupconfidence[67:156,]
+    #groupconfidenceRAE <- groupconfidence[157:177,]
+    
+    colourscheme <- getCtrlColourScheme(groups = group)
+    #plot Aligned Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceAligned[,1]
+    upper <- groupconfidenceAligned[,3]
+    mid <- groupconfidenceAligned[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:45), rev(c(1:45))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:45), y = mid,col=col,lty=1)
+    
+    #plot Left Aligned Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceLeftAligned[,1]
+    upper <- groupconfidenceLeftAligned[,3]
+    mid <- groupconfidenceLeftAligned[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(46:66), rev(c(46:66))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(46:66), y = mid,col=col,lty=1)
+    
+  }
+  
+  #add legend
+  legend(5,145,legend=c('far target','mid target', 'near target'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+}
+
+plotAlignedCtrlCircular <- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmironline-master/doc/fig/Fig1A_AlignedCtrlCircular.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  # create plot
+  meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,67), ylim = c(-30,185), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Aligned reaches", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  abline(h = c(0, 10, 90, 170), v = c(45, 66), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  axis(1, at = c(1, 10, 20, 30, 40, 46, 56, 66)) #tick marks for x axis
+  axis(2, at = c(-30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_Circular_CI.csv', group))
     
     #split up data set for plotting purposes
     groupconfidenceAligned <- groupconfidence[1:45,]
@@ -445,41 +577,6 @@ getMirroredGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
     #return(dataoutput)
     write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), row.names = F)
   }
-}
-
-getAngularReachDevsCI <- function(data, group, resamples = 1000){
-  
-  #CI's generated for far target are very wide, given the negative or positive directions in circular values
-  #To fix this, we can generate angular reach deviations using x and y coordinates instead
-  #We bootstrap with replacement, so that we can generate lower, mid, upper values for CI
-  data <- data[which(is.finite(data))]
-  samplematrix <- matrix(sample(data, size = resamples*length(data), replace = TRUE), nrow = resamples)
-  BS <- c()
-  for (irow in 1:nrow(samplematrix)){
-    subdat <- samplematrix[irow,]
-    #convert reach deviations from degrees to radians
-    degtorad <- (subdat / 180) * pi
-    #sin of radians values will be y values, cos will be x
-    yvals <- sin(degtorad)
-    xvals <- cos(degtorad)
-    #summation of all y and x values to be passed on to atan2, then converted to degrees
-    y <- sum(yvals)
-    x <- sum(xvals)
-    rd <- (atan2(y,x) / pi) * 180
-    
-    # BS should have as much as resamples (i.e. 1000)
-    BS <- as.numeric(c(BS, rd))
-  }
-  #wide CI's are generated for far group after atan2 (i.e. -178 should be the same as 182 in a 2D plot)
-  #to fix for this, we add 360 for bootstrapped values below -90 for only the far group
-  for (angleidx in 1:length(BS)){
-    angle <- BS[angleidx]
-    if (group == 'far' && angle < -90){
-      BS[angleidx] <- angle + 360
-    }
-  }
-  
-  return(quantile(BS, probs = c(0.025, 0.50, 0.975)))
 }
 
 getMirroredGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
@@ -716,6 +813,29 @@ getRAEGroupLearningCtrl <- function(groups = c('far', 'mid', 'near')){
 }
 
 getRAEGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
+  
+  for(group in groups){
+    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_CI.csv', group), row.names = F)
+    }
+  }
+}
+
+getRAEGroupLearningCtrlCircularCI <- function(groups = c('far', 'mid', 'near')){
   for(group in groups){
     
     data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
@@ -744,7 +864,7 @@ getRAEGroupLearningCtrlCI <- function(groups = c('far', 'mid', 'near')){
         confidence <- rbind(confidence, citrial)
       }
       
-      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_CI.csv', group), row.names = F) 
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_Circular_CI.csv', group), row.names = F) 
       
     }
   }
@@ -803,6 +923,59 @@ plotRAECtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   }
 }
 
+plotRAECtrlCircular <- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmironline-master/doc/fig/Fig1C_RAECtrlCircular.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  # create plot
+  meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,22), ylim = c(-30,185), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Washout trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  abline(h = c(0, 10, 90, 170), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  axis(1, at = c(1, 5, 10, 15, 21)) #tick marks for x axis
+  axis(2, at = c(-30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_Circular_CI.csv', group))
+    
+    colourscheme <- getCtrlColourScheme(groups = group)
+    #plot Mir Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidence[,1]
+    upper <- groupconfidence[,3]
+    mid <- groupconfidence[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:21), rev(c(1:21))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:21), y = mid,col=col,lty=1)
+  }
+  
+  #add legend
+  legend(5,145,legend=c('far target','mid target', 'near target'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+}
+
 #plot all learning rate trials----
 plotAllTasksCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
@@ -825,6 +998,107 @@ plotAllTasksCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
     groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_CI.csv', group))
     groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl_CI.csv', group))
     groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_CI.csv', group))
+    
+    
+    
+    colourscheme <- getCtrlColourScheme(groups = group)
+    #plot Aligned Data
+    #take only first, last and middle columns of file
+    
+    #split up data set for plotting purposes
+    groupconfidenceAligned <- groupconfidence[1:45,]
+    groupconfidenceLeftAligned <- groupconfidence[46:66,]
+    
+    lower <- groupconfidenceAligned[,1]
+    upper <- groupconfidenceAligned[,3]
+    mid <- groupconfidenceAligned[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(1:45), rev(c(1:45))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(1:45), y = mid,col=col,lty=1)
+    
+    #plot Left Aligned Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceLeftAligned[,1]
+    upper <- groupconfidenceLeftAligned[,3]
+    mid <- groupconfidenceLeftAligned[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(46:66), rev(c(46:66))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(46:66), y = mid,col=col,lty=1)
+    
+    #plot Mirrored Data
+    lower <- groupconfidenceLC[,1]
+    upper <- groupconfidenceLC[,3]
+    mid <- groupconfidenceLC[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial nnumber, y depends on values of bounds
+    polygon(x = c(c(67:156), rev(c(67:156))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(67:156), y = mid,col=col,lty=1)
+    
+    #plot Washout Data
+    #take only first, last and middle columns of file
+    lower <- groupconfidenceRAE[,1]
+    upper <- groupconfidenceRAE[,3]
+    mid <- groupconfidenceRAE[,2]
+    
+    col <- colourscheme[[group]][['T']] #use colour scheme according to group
+    
+    #upper and lower bounds create a polygon
+    #polygon creates it from low left to low right, then up right to up left -> use rev
+    #x is just trial number, y depends on values of bounds
+    polygon(x = c(c(157:177), rev(c(157:177))), y = c(lower, rev(upper)), border=NA, col=col)
+    col <- colourscheme[[group]][['S']]
+    lines(x = c(157:177), y = mid,col=col,lty=1)
+  }
+  
+  #add legend
+  legend(5,145,legend=c('far target','mid target', 'near target'),
+         col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+         lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+}
+
+plotAllTasksCtrlCircular <- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  #but we can save plot as svg file
+  if (target=='svg'){
+    svglite(file='data/controlmironline-master/doc/fig/Fig1_LearningCtrlCircular.svg', width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  plot(NA, NA, xlim = c(0,178), ylim = c(-200,200), 
+       xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  abline(h = c(0, 10, 90, 170), v = c(45, 66, 156), col = 8, lty = 2)
+  axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  
+  
+  for(group in groups){
+    #read in files created by getGroupConfidenceInterval in filehandling.R
+    groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_Circular_CI.csv', group))
+    groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl_Circular_CI.csv', group))
+    groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_Circular_CI.csv', group))
     
     
     
