@@ -985,12 +985,12 @@ plotAllTasksCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
     svglite(file='data/controlmironline-master/doc/fig/Fig1_LearningCtrl.svg', width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
-  plot(NA, NA, xlim = c(0,178), ylim = c(-200,200), 
+  plot(NA, NA, xlim = c(0,178), ylim = c(-65,225), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
        main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   abline(h = c(0, 10, 90, 170), v = c(45, 66, 156), col = 8, lty = 2)
   axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
-  axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  axis(2, at = c(-60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
   
   
   for(group in groups){
@@ -1938,7 +1938,7 @@ plotIndividualCtrl <- function(groups = c('far', 'mid', 'near'), target='inline'
     data_MIR<- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE)
     data_RAE<- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv', group), check.names = FALSE)
     
-    plot(NA, NA, xlim = c(0,178), ylim = c(-200,200), 
+    plot(NA, NA, xlim = c(0,178), ylim = c(-200,225), 
          xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
          main = sprintf("Individual rate of learning (%s target)", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
     if (group == 'far'){
@@ -2116,7 +2116,59 @@ plotCtrlHeatmaps <- function(groups = c('far', 'mid', 'near'), target = 'inline'
 }
 
 # Comparing devices used: Mouse vs trackpad----
+
 getDeviceCtrlCI<- function(groups = c('far', 'mid', 'near'), device, task){
+  
+  for(group in groups){
+    #get qualtrics response to device used
+    qualtdat <- read.csv('data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to device
+    devqualt <- qualtdat[which(qualtdat$Q6.4 == device),]
+    ppqualt <- devqualt$id
+    
+    if(task == "Aligned"){
+      #keep only data of pp from this list
+      #Aligned
+      dat_AL <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+      trial <- dat_AL$trial
+      ndat <- dat_AL[,which(colnames(dat_AL) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    } else if(task == "Mirror"){
+      #Mirror
+      dat_MR <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE)
+      trial <- dat_MR$trial
+      ndat <- dat_MR[,which(colnames(dat_MR) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    } else if(task == "RAE"){
+      #RAE
+      dat_RAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv', group), check.names = FALSE)
+      trial <- dat_RAE$trial
+      ndat <- dat_RAE[,which(colnames(dat_RAE) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    }
+    
+    #get CIs
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_CI_%s.csv', group, task, device), row.names = F)
+      
+    }
+  }
+}
+
+getDeviceCtrlCircularCI<- function(groups = c('far', 'mid', 'near'), device, task){
   
   for(group in groups){
     #get qualtrics response to device used
@@ -2168,7 +2220,7 @@ getDeviceCtrlCI<- function(groups = c('far', 'mid', 'near'), device, task){
         confidence <- rbind(confidence, citrial)
       }
       
-      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_CI_%s.csv', group, task, device), row.names = F)
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_Circular_CI_%s.csv', group, task, device), row.names = F)
       
     }
   }
@@ -2202,6 +2254,112 @@ plotDeviceCtrl <- function(groups = c('far', 'mid', 'near'), devices = c('Mouse'
       groupconfidenceLeftAligned <- groupconfidence[c(46:66),]
       groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirrorCtrl_CI_%s.csv', group, device))
       groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_CI_%s.csv', group, device))
+      
+      
+      
+      colourscheme <- getDeviceColourScheme(devices = device)
+      
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:45), rev(c(1:45))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(1:45), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Left(switch hand) Aligned data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceLeftAligned[,1]
+      upper <- groupconfidenceLeftAligned[,3]
+      mid <- groupconfidenceLeftAligned[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(46:66), rev(c(46:66))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(46:66), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(67:156), rev(c(67:156))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(67:156), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Washout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(157:177), rev(c(157:177))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(157:177), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(1,-90,legend=c('Mouse','Trackpad'),
+           col=c(colourscheme[['Mouse']][['S']],colourscheme[['Trackpad']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+}
+
+plotDeviceCtrlCircular <- function(groups = c('far', 'mid', 'near'), devices = c('Mouse','Trackpad'), target='inline') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/controlmironline-master/doc/fig/Fig4_%s_DeviceCtrlCircular.svg', group), width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    plot(NA, NA, xlim = c(0,178), ylim = c(-200,200), 
+         xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+         main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    if(group == 'far'){
+      abline(h = c(0, 170), v = c(45, 66, 156), col = 8, lty = 2)
+    } else if(group == 'mid'){
+      abline(h = c(0, 90), v = c(45, 66, 156), col = 8, lty = 2)
+    } else if(group == 'near'){
+      abline(h = c(0, 10), v = c(45, 66, 156), col = 8, lty = 2)
+    }
+    
+    axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+    axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+    
+    for(device in devices){
+      #read in files created by getGroupConfidenceInterval in filehandling.R
+      groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_Circular_CI_%s.csv', group, device))
+      groupconfidenceAligned <- groupconfidence[c(1:45),]
+      groupconfidenceLeftAligned <- groupconfidence[c(46:66),]
+      groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirrorCtrl_Circular_CI_%s.csv', group, device))
+      groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_Circular_CI_%s.csv', group, device))
       
       
       
@@ -2619,6 +2777,57 @@ getSexCtrlCI<- function(groups = c('far', 'mid', 'near'), sex, task){
     confidence <- data.frame()
     
     for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_CI_%s.csv', group, task, sex), row.names = F)
+      
+    }
+  }
+}
+
+getSexCtrlCircularCI<- function(groups = c('far', 'mid', 'near'), sex, task){
+  
+  for(group in groups){
+    #get qualtrics response to device used
+    qualtdat <- read.csv('data/controlmironline-master/qualtrics/CtrlMir_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to device
+    devqualt <- qualtdat[which(qualtdat$Q2.2 == sex),] #one answered prefer not to say
+    ppqualt <- devqualt$id
+    
+    if(task == "Aligned"){
+      #keep only data of pp from this list
+      #Aligned
+      dat_AL <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+      trial <- dat_AL$trial
+      ndat <- dat_AL[,which(colnames(dat_AL) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    } else if(task == "Mirror"){
+      #Mirror
+      dat_MR <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE)
+      trial <- dat_MR$trial
+      ndat <- dat_MR[,which(colnames(dat_MR) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    } else if(task == "RAE"){
+      #RAE
+      dat_RAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv', group), check.names = FALSE)
+      trial <- dat_RAE$trial
+      ndat <- dat_RAE[,which(colnames(dat_RAE) %in% ppqualt)]
+      data <- cbind(trial, ndat)
+    }
+    
+    #get CIs
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
       circ_subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
       circ_subdat <- as.circular(circ_subdat, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
       
@@ -2635,7 +2844,7 @@ getSexCtrlCI<- function(groups = c('far', 'mid', 'near'), sex, task){
         confidence <- rbind(confidence, citrial)
       }
       
-      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_CI_%s.csv', group, task, sex), row.names = F)
+      write.csv(confidence, file=sprintf('data/controlmironline-master/data/processed/%s_%sCtrl_Circular_CI_%s.csv', group, task, sex), row.names = F)
       
     }
   }
@@ -2669,6 +2878,112 @@ plotSexCtrl <- function(groups = c('far', 'mid', 'near'), sexes = c('Male','Fema
       groupconfidenceLeftAligned <- groupconfidence[c(46:66),]
       groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirrorCtrl_CI_%s.csv', group, sex))
       groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_CI_%s.csv', group, sex))
+      
+      
+      
+      colourscheme <- getSexColourScheme(sexes = sex)
+      
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:45), rev(c(1:45))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(1:45), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Left(switch hand) Aligned data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceLeftAligned[,1]
+      upper <- groupconfidenceLeftAligned[,3]
+      mid <- groupconfidenceLeftAligned[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(46:66), rev(c(46:66))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(46:66), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(67:156), rev(c(67:156))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(67:156), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Washout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(157:177), rev(c(157:177))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(157:177), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(1,-90,legend=c('Male','Female'),
+           col=c(colourscheme[['Male']][['S']],colourscheme[['Female']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+}
+
+plotSexCtrlCircular <- function(groups = c('far', 'mid', 'near'), sexes = c('Male','Female'), target='inline') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/controlmironline-master/doc/fig/Fig5_%s_SexCtrlCircular.svg', group), width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    plot(NA, NA, xlim = c(0,178), ylim = c(-200,200), 
+         xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+         main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    if(group == 'far'){
+      abline(h = c(0, 170), v = c(45, 66, 156), col = 8, lty = 2)
+    } else if(group == 'mid'){
+      abline(h = c(0, 90), v = c(45, 66, 156), col = 8, lty = 2)
+    } else if(group == 'near'){
+      abline(h = c(0, 10), v = c(45, 66, 156), col = 8, lty = 2)
+    }
+    
+    axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+    axis(2, at = c(-170, -130, -90, -60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+    
+    for(sex in sexes){
+      #read in files created by getGroupConfidenceInterval in filehandling.R
+      groupconfidence <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl_Circular_CI_%s.csv', group, sex))
+      groupconfidenceAligned <- groupconfidence[c(1:45),]
+      groupconfidenceLeftAligned <- groupconfidence[c(46:66),]
+      groupconfidenceLC <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirrorCtrl_Circular_CI_%s.csv', group, sex))
+      groupconfidenceRAE <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_RAECtrl_Circular_CI_%s.csv', group, sex))
       
       
       
