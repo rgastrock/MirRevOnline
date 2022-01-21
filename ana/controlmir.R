@@ -1179,6 +1179,151 @@ plotAllTasksCtrlCircular <- function(groups = c('far', 'mid', 'near'), target='i
   }
 }
 
+getBlockedMirCtrl <- function(group, blockdefs) {
+  
+  curves <- read.csv(sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv',group), stringsAsFactors=FALSE)  
+  curves <- curves[,-1] #remove trial rows
+  N <- dim(curves)[2]
+  
+  blocked <- array(NA, dim=c(N,length(blockdefs)))
+  
+  for (ppno in c(1:N)) {
+    
+    for (blockno in c(1:length(blockdefs))) {
+      #for each participant, and every three trials, get the mean
+      blockdef <- blockdefs[[blockno]]
+      blockstart <- blockdef[1]
+      blockend <- blockstart + blockdef[2] - 1
+      samples <- curves[blockstart:blockend,ppno]
+      blocked[ppno,blockno] <- mean(samples, na.rm=TRUE)
+      
+    }
+    
+  }
+  
+  return(blocked)
+  
+}
+
+plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')) {
+  
+  if (target == 'svg') {
+    svglite(file='data/controlmironline-master/doc/fig/Fig1F_BlockedLearningCtrl.svg', width=14, height=9, pointsize=14, system_fonts=list(sans='Arial'))
+  }
+  
+  #par(mfrow=c(1,2), mar=c(4,4,2,0.1))
+  par(mar=c(4,4,2,0.1))
+  
+  
+  
+  #layout(matrix(c(1,2,3), nrow=1, ncol=3, byrow = TRUE), widths=c(2,2,2), heights=c(1,1))
+  layout(matrix(c(1,1,1,2,3,4), 2, 3, byrow = TRUE), widths=c(2,2,2), heights=c(1,1))
+  
+  
+  # # # # # # # # # #
+  # panel A: Learning Curves for all groups across all trials
+  plotAllTasksCtrl()
+  #mtext('A', side=3, outer=TRUE, at=c(0,1), line=-1, adj=0, padj=1)
+  mtext('a', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  
+  
+  # # # # # # # # # #
+  # panel B: individual participants in the first trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 4 - 6',ylab='Angular reach deviation (°)',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+
+  mtext('b', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  abline(h = c(10,90,170), col = 8, lty = 2)
+  
+  blockdefs <- list(c(4,3))
+  #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  groupno <- 0
+  
+  for (group in groups) {
+    
+    groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
+    blocked <- getBlockedMirCtrl(group, blockdefs)
+    colourscheme <- getCtrlColourScheme(group=group)
+    #get 2.5, 50, 97.5% CIs
+    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
+    points(x=groupno,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
+    
+  }
+  
+  
+  axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
+  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  
+  
+  # # # # # # # # # #
+  # panel C: individual participants in the second trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 43 - 45',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  
+  mtext('c', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  abline(h = c(10,90,170), col = 8, lty = 2)
+  
+  blockdefs <- list(c(43,3))
+  #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  groupno <- 0
+  
+  for (group in groups) {
+    
+    groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
+    blocked <- getBlockedMirCtrl(group, blockdefs)
+    colourscheme <- getCtrlColourScheme(group=group)
+    #get 2.5, 50, 97.5% CIs
+    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
+    points(x=groupno,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
+    
+  }
+  
+  
+  axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
+  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  
+  
+  # # # # # # # # # #
+  # panel D: individual participants in the last trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 85 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  
+  mtext('d', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  abline(h = c(10,90,170), col = 8, lty = 2)
+  
+  blockdefs <- list(c(85,6))
+  #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  groupno <- 0
+  
+  for (group in groups) {
+    
+    groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
+    blocked <- getBlockedMirCtrl(group, blockdefs)
+    colourscheme <- getCtrlColourScheme(group=group)
+    #get 2.5, 50, 97.5% CIs
+    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
+    points(x=groupno,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
+    
+  }
+  
+  
+  axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
+  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  
+  
+  if (target == 'svg') {
+    dev.off()
+  }
+  
+}
+
+
 # circular density distributions-----
 plotAlignedCtrlCircFreq <- function(groups = c('far', 'mid', 'near')){
   
