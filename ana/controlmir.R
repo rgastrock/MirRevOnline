@@ -1229,9 +1229,39 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   # # # # # # # # # #
   # panel B: individual participants in the first trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 4 - 6',ylab='Angular reach deviation (°)',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 1 - 3',ylab='Angular reach deviation (°)',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
 
   mtext('b', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  abline(h = c(10,90,170), col = 8, lty = 2)
+  
+  blockdefs <- list(c(1,3))
+  #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  groupno <- 0
+  
+  for (group in groups) {
+    
+    groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
+    blocked <- getBlockedMirCtrl(group, blockdefs)
+    colourscheme <- getCtrlColourScheme(group=group)
+    #get 2.5, 50, 97.5% CIs
+    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    
+    col <- colourscheme[[group]][['S']]
+    lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
+    points(x=groupno,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
+    
+  }
+  
+  
+  axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
+  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  
+  
+  # # # # # # # # # #
+  # panel C: individual participants in the second trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 4 - 6',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  
+  mtext('c', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(10,90,170), col = 8, lty = 2)
   
   blockdefs <- list(c(4,3))
@@ -1258,43 +1288,13 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   
   # # # # # # # # # #
-  # panel C: individual participants in the second trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 43 - 45',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
-  
-  mtext('c', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
-  abline(h = c(10,90,170), col = 8, lty = 2)
-  
-  blockdefs <- list(c(43,3))
-  #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
-  groupno <- 0
-  
-  for (group in groups) {
-    
-    groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
-    blocked <- getBlockedMirCtrl(group, blockdefs)
-    colourscheme <- getCtrlColourScheme(group=group)
-    #get 2.5, 50, 97.5% CIs
-    meandist <- getAngularReachDevsCI(data = blocked, group = group)
-    
-    col <- colourscheme[[group]][['S']]
-    lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
-    points(x=groupno,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
-    
-  }
-  
-  
-  axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
-  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
-  
-  
-  # # # # # # # # # #
   # panel D: individual participants in the last trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 85 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 88 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
   
   mtext('d', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(10,90,170), col = 8, lty = 2)
   
-  blockdefs <- list(c(85,6))
+  blockdefs <- list(c(88,6))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
   groupno <- 0
   
