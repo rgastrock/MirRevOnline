@@ -1289,12 +1289,12 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   # # # # # # # # # #
   # panel D: individual participants in the last trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 88 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 76 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
   
   mtext('d', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(10,90,170), col = 8, lty = 2)
   
-  blockdefs <- list(c(88,6))
+  blockdefs <- list(c(76,15))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
   groupno <- 0
   
