@@ -1819,3 +1819,56 @@ plotCtrlGenHeatmaps <- function(groups = c('far', 'mid', 'near'), target = 'inli
   }
 }
 
+# Statistics----
+# Angular reach devs are not comparable across target locations
+# We can use percentage of compensation instead
+
+#first, we should get corrected values for the far targets (add or subtract 360 for extreme values, as we did for plotting)
+getCorrectedFarAngDevs <- function(group = 'far'){
+  
+  data <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  
+  trialno <- data$trial
+  postrials <- c(1:21, 64:126)
+  
+  for(trial in trialno){
+    subdat <- as.numeric(data[trial, 2:length(data)])
+    if(trial %in% postrials){
+      for (angleidx in 1:length(subdat)){
+        angle <- subdat[angleidx]
+        if (group == 'far' && angle < -90 && !is.na(angle)){
+          subdat[angleidx] <- angle + 360
+        }
+      }
+    } else {
+      for (angleidx in 1:length(subdat)){
+        angle <- subdat[angleidx]
+        if (group == 'far' && angle > 90 && !is.na(angle)){
+          subdat[angleidx] <- angle - 360
+        }
+      }
+    }
+    
+    
+    data[trial, 2:length(data)] <- subdat
+  }
+  return(data)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
