@@ -1855,7 +1855,68 @@ getCorrectedFarAngDevs <- function(group = 'far'){
   return(data)
 }
 
-
+getGroupPercentCompensation <- function(groups = c('far', 'mid', 'near')){
+  
+  for(group in groups){
+    #far group
+    if (group == 'far'){
+      data <- getCorrectedFarAngDevs()
+      trialno <- data$trial
+      postrials <- c(1:21, 64:126)
+      
+      for(trial in trialno){
+        subdat <- as.numeric(data[trial, 2:length(data)])
+        if(trial %in% postrials){
+          for (angleidx in 1:length(subdat)){
+            angle <- subdat[angleidx]
+            if (!is.na(angle)){
+              subdat[angleidx] <- (angle/170)*100 #full compensation for far targets is 170 deg
+            }
+          }
+        } else {
+          for (angleidx in 1:length(subdat)){
+            angle <- subdat[angleidx]
+            if (!is.na(angle)){
+              subdat[angleidx] <- ((angle*-1)/170)*100 #multiply by negative 1 for a sign flip
+            }
+          }
+        }
+        data[trial, 2:length(data)] <- subdat
+      }
+    } else {
+      data <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv', group), check.names = FALSE)
+      trialno <- data$trial
+      postrials <- c(1:21, 64:126)
+      
+      for(trial in trialno){
+        subdat <- as.numeric(data[trial, 2:length(data)])
+        if(trial %in% postrials){
+          for (angleidx in 1:length(subdat)){
+            angle <- subdat[angleidx]
+            if (!is.na(angle) && group == 'mid'){
+              subdat[angleidx] <- (angle/90)*100 #full compensation for mid targets is 90 deg
+            } else if(!is.na(angle) && group == 'near'){
+              subdat[angleidx] <- (angle/10)*100 #full compensation for near targets is 10 deg
+            }
+          }
+        } else {
+          for (angleidx in 1:length(subdat)){
+            angle <- subdat[angleidx]
+            if (!is.na(angle) && group == 'mid'){
+              subdat[angleidx] <- ((angle*-1)/90)*100 #multiply by negative 1 for a sign flip
+            } else if(!is.na(angle) && group == 'near'){
+              subdat[angleidx] <- ((angle*-1)/10)*100
+            }
+          }
+        }
+        data[trial, 2:length(data)] <- subdat
+      }
+    }
+    write.csv(data, file=sprintf('data/controlmirgenonline-master/data/statistics/%s_PercentCompensation.csv', group), row.names = F) 
+    
+  }
+  
+}
 
 
 
