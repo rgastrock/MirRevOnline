@@ -1918,9 +1918,91 @@ getGroupPercentCompensation <- function(groups = c('far', 'mid', 'near')){
   
 }
 
+# reduce each quadrant to three levels
+# 3X3, target by block
+# blocks defined as 1st 3 trials, 2nd 3 trials, last 3 trials
+# blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3),
+#                   'Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3),
+#                   'Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3),
+#                   'Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3),
+#                   'Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3),
+#                   'Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
 
+getBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmirgenonline-master/data/statistics/%s_PercentCompensation.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    percentcomp <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every three trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        percentcomp <- c(percentcomp, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, percentcomp)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('Q1_1','Q1_2','Q1_3'))
+  # LCaov$block <- factor(LCaov$block, levels = c('Q1_1','Q1_2','Q1_3',
+  #                                               'Q4_1','Q4_2','Q4_3',
+  #                                               'Q2_1','Q2_2','Q2_3',
+  #                                               'Q1A_1','Q1A_2','Q1A_3',
+  #                                               'Q1L_1','Q1L_2','Q1L_3',
+  #                                               'Q1W_1','Q1W_2','Q1W_3')) #so that it does not order it alphabetically
+  return(LCaov)
+  
+}
 
+learningANOVA <- function() {
+  
+  blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3))
+  # blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3),
+  #                   'Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3),
+  #                   'Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3),
+  #                   'Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3),
+  #                   'Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3),
+  #                   'Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+  
+  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs)                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within=block,between=target,type=3, return_aov = TRUE)
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+}
 
+#can run anova's for each quadrant (but not our main thing)
+#will want to compare 2 quadrants with each other (3X3X2)
 
 
 
