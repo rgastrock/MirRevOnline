@@ -1928,7 +1928,7 @@ getGroupPercentCompensation <- function(groups = c('far', 'mid', 'near')){
 #                   'Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3),
 #                   'Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
 
-getBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs) {
+getBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, quadrant) {
   
   LCaov <- data.frame()
   for(group in groups){
@@ -1968,39 +1968,55 @@ getBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs) {
   #need to make some columns as factors for ANOVA
   LCaov$target <- as.factor(LCaov$target)
   LCaov$block <- as.factor(LCaov$block)
-  LCaov$block <- factor(LCaov$block, levels = c('Q1_1','Q1_2','Q1_3'))
-  # LCaov$block <- factor(LCaov$block, levels = c('Q1_1','Q1_2','Q1_3',
-  #                                               'Q4_1','Q4_2','Q4_3',
-  #                                               'Q2_1','Q2_2','Q2_3',
-  #                                               'Q1A_1','Q1A_2','Q1A_3',
-  #                                               'Q1L_1','Q1L_2','Q1L_3',
-  #                                               'Q1W_1','Q1W_2','Q1W_3')) #so that it does not order it alphabetically
+  if(quadrant == '1'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q1_1','Q1_2','Q1_3'))
+  } else if(quadrant == '4'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q4_1','Q4_2','Q4_3'))
+  } else if(quadrant == '2'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q2_1','Q2_2','Q2_3'))
+  } else if(quadrant == '1A'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q1A_1','Q1A_2','Q1A_3'))
+  } else if(quadrant == '1L'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q1L_1','Q1L_2','Q1L_3'))
+  } else if(quadrant == '1W'){
+    LCaov$block <- factor(LCaov$block, levels = c('Q1W_1','Q1W_2','Q1W_3'))
+  }
   return(LCaov)
   
 }
 
-learningANOVA <- function() {
-  
-  blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3))
-  # blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3),
-  #                   'Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3),
-  #                   'Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3),
-  #                   'Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3),
-  #                   'Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3),
-  #                   'Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
-  
-  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs)                      
-  
-  #looking into interaction below:
-  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
-  
-  #learning curve ANOVA's
-  # for ez, case ID should be a factor:
-  LC4aov$participant <- as.factor(LC4aov$participant)
-  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within=block,between=target,type=3, return_aov = TRUE)
-  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+learningANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
+  for(quadrant in quadrants){
+    if(quadrant == '1'){
+      blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3))
+    } else if(quadrant == '4'){
+      blockdefs <- list('Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3))
+    } else if(quadrant == '2'){
+      blockdefs <- list('Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3))
+    } else if(quadrant == '1A'){
+      blockdefs <- list('Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3))
+    } else if(quadrant == '1L'){
+      blockdefs <- list('Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3))
+    } else if(quadrant == '1W'){
+      blockdefs <- list('Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+    }
+    
+    LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)                      
+    
+    #looking into interaction below:
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within=block,between=target,type=3, return_aov = TRUE)
+    cat(sprintf('Quadrant %s:\n', quadrant))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
 }
 
+#washout shows a main effect of block, test this with posthoc?
+#quadrant 4 shows main effect of target, but sphericity is violated -> GG is no longer significant
 #can run anova's for each quadrant (but not our main thing)
 #will want to compare 2 quadrants with each other (3X3X2)
 
