@@ -2009,20 +2009,181 @@ learningANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
     #learning curve ANOVA's
     # for ez, case ID should be a factor:
     LC4aov$participant <- as.factor(LC4aov$participant)
-    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within=block,between=target,type=3, return_aov = TRUE)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
     cat(sprintf('Quadrant %s:\n', quadrant))
     print(firstAOV[1:3]) #so that it doesn't print the aov object as well
   }
 }
 
-#washout shows a main effect of block, test this with posthoc?
-#quadrant 4 shows main effect of target, but sphericity is violated -> GG is no longer significant
-#can run anova's for each quadrant (but not our main thing)
-#will want to compare 2 quadrants with each other (3X3X2)
+#follow up on quadrant 4 (main effect of target)
+quadrant4ComparisonMeans <- function(quadrant='4'){
+  blockdefs <- list('Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3))
+  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
 
+quadrant4Comparisons <- function(quadrant='4', method='bonferroni'){
+  blockdefs <- list('Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3))
+  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant4ComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- quadrant4Comparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+#follow up on washout (main effect of block)
+washoutComparisonMeans <- function(quadrant='1W'){
+  blockdefs <- list('Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
 
+washoutComparisons <- function(quadrant='1W', method='bonferroni'){
+  blockdefs <- list('Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  
+  #specify contrasts
+  #levels of target are: Q1w_1, Q1W_2, Q1W_3
+  Q1W_1vsQ1W_2 <- c(-1,1,0)
+  Q1W_1vsQ1W_3 <- c(-1,0,1)
+  Q1W_2vsQ1W_3 <- c(0,-1,1)
+  
+  contrastList <- list('block 1 vs. block 2'=Q1W_1vsQ1W_2, 'block 1 vs. block 3'=Q1W_1vsQ1W_3, 'block 2 vs. block 3'=Q1W_2vsQ1W_3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+washoutComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- washoutComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#Next, we want to compare 2 quadrants with each other (3X3X2)
+#add an identifier of which quadrant it is, regardless of block
+getBlockedLearningAOV2Quads <- function(quadrantA, quadrantB){
+  
+  if(quadrantA == '1'){
+    blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3))
+  } else if(quadrantA == '4'){
+    blockdefs <- list('Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3))
+  } else if(quadrantA == '2'){
+    blockdefs <- list('Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3))
+  } else if(quadrantA == '1A'){
+    blockdefs <- list('Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3))
+  } else if(quadrantA == '1L'){
+    blockdefs <- list('Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3))
+  } else if(quadrantA == '1W'){
+    blockdefs <- list('Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+  }
+  
+  dataA <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrantA)
+  dataA$quadrant <- quadrantA
+  
+  if(quadrantB == '1'){
+    blockdefs <- list('Q1_1'=c(1,3),'Q1_2'=c(4,3),'Q1_3'=c(19,3))
+  } else if(quadrantB == '4'){
+    blockdefs <- list('Q4_1'=c(22,3),'Q4_2'=c(25,3),'Q4_3'=c(40,3))
+  } else if(quadrantB == '2'){
+    blockdefs <- list('Q2_1'=c(43,3),'Q2_2'=c(46,3),'Q2_3'=c(61,3))
+  } else if(quadrantB == '1A'){
+    blockdefs <- list('Q1A_1'=c(64,3),'Q1A_2'=c(67,3),'Q1A_3'=c(82,3))
+  } else if(quadrantB == '1L'){
+    blockdefs <- list('Q1L_1'=c(85,3),'Q1L_2'=c(88,3),'Q1L_3'=c(103,3))
+  } else if(quadrantB == '1W'){
+    blockdefs <- list('Q1W_1'=c(106,3),'Q1W_2'=c(109,3),'Q1W_3'=c(124,3))
+  }
+  
+  dataB <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrantB)
+  dataB$quadrant <- quadrantB
+  
+  data <- rbind(dataA, dataB)
+  
+  #need to make some columns as factors for ANOVA
+  data$target <- as.factor(data$target)
+  data$block <- as.factor(data$block)
+  #data$quadrant <- as.factor(data$quadrant)
+  data$quadrant <- factor(data$quadrant, levels = c(quadrantA, quadrantB)) #keeps order consistent with others
+  return(data)
+}
+
+learningANOVA2Quads <- function(quadrantA, quadrantB) {
+  
+  LC4aov <- getBlockedLearningAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(target, block), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Quadrant %s:\n', quadrant))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#do we need 3x3x2 or can we simply make it have 6 blocks, so 3x6?
 
 
 
