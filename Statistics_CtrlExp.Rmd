@@ -1,0 +1,88 @@
+---
+title: "Online Mirror Reversal (Ctrl Mir and Mir Gen) Statistics"
+author: "Raphael Gastrock"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Overview
+
+This document discusses statistics for the online mirror reversal experiment (named CtrlMir and CtrlMirGen). It has two parts: Part 1 where participants learn the mirror reversal, part 2 where participants return for a second session and are tested on learning retention, and generalization across the workspace and hands.
+
+# Set up the R enviornment
+
+We have written code that pre-processes the data, plots figures, and runs statistical tests. Import the sources below:
+
+```{r message=FALSE, warning=FALSE}
+source('ana/shared.R')
+source('ana/su&fa2020online.R')
+source('ana/qualtricsdata.R')
+source('ana/controlmir.R')
+source('ana/controlmirgen.R')
+```
+
+# Part 2 statistics
+
+As a reference for the different variables we will analyze, please refer to the plot below.
+```{r}
+plotLearningCtrlGen()
+```
+
+We start with part 2, given that the addition of different quadrants and the untrained hand would require more analyses. The experiment proceeds by first testing retention in quadrant 1, followed by testing for generalization in quadrants 4 then 2. To avoid decay in learning, we have participants reach within quadrant 1 again, before asking them to switch to their untrained hand. The session ends with washout reaches in quadrant 1. We reduce the target locations to three levels: far (5 deg. in polar coordinates), mid (45 deg.), and near (85 deg.). Note that the levels signify their proximity to the vertical mirror axis. Within each quadrant are three levels of blocks of trials (first 3 trials, second 3 trials, last 3 trials). For our dependent variable measure, we converted angular reach deviations into percent of compensation, to make targets comparable to each other.
+
+# Analyses of each quadrant or phase of experiment
+We conduct a 3X3 repeated measures ANOVA with target and block as within subjects factors, for each of the quadrants (i.e., each column in the plot above).
+```{r}
+learningANOVA()
+```
+## Quadrant 4 follow-up tests
+We find that in quadrant 4, there is a main effect of target even after corrections for sphericity violations. 
+```{r}
+quadrant4ComparisonsEffSize(method='bonferroni')
+```
+
+Follow=up tests show that the main effect of target is being driven by the difference in compensation between mid and near targets, regardless of block.
+
+## Washout follow-up tests
+We also find that in the washout period, there is a main effect of block.
+```{r}
+washoutComparisonsEffSize(method='bonferroni')
+```
+
+Follow-up tests show that the main effect of block is driven by the difference in compensation between the first and last block during the washout period. As seen in the plot, participants are still compensating on average during the first trial of the washout period. This is more likely to be explained by the abrupt switch in trial type from a reversed to aligned feedback of the cursor (i.e., there were no instructions that the feedback would be aligned again).
+
+# Comparison of quadrants
+Next, we compare compensation across different quadrants. We will compare quadrants in pairs and conduct a 3X3X2 repeated measures ANOVA with target, block, and quadrant as within subjects factors. Specifically, we compare quadrants 4, 2, and the switch to the untrained hand (1L) to the first set of trials in quadrant 1. We also compare the set of trials with the untrained hand to the washout period (1L and 1W).
+```{r}
+learningANOVA2Quads('1','4')
+learningANOVA2Quads('1','2')
+learningANOVA2Quads('1','1L')
+learningANOVA2Quads('1L','1W')
+```
+We find a main effect of target when comparing quadrants 1 and 4. We also find a significant block by quadrant interaction when comparing 1L and washout.
+
+## Follow-up tests for Quadrants 1 and 4 (main effect of target)
+Since it is only a main effect of target, we can take the mean compensation for every participant in each of the target locations, regardless of block and quadrant.
+```{r}
+Q1and4ComparisonsEffSize()
+```
+We find that the effect is driven by a difference between mid and near targets, similar to the effect seen when conduction the analysis within quadrant 4 only.
+
+## Follow-up tests for Untrained hand and Washout (interaction between block and quadrant)
+Note that we do find a main effect of quadrant here, but investigating the interaction would likely account for this effect. We take the mean compensation for every participant in each block and quadrant, regardless of target location.
+```{r}
+Q1Land1WComparisonsEffSize(method='bonferroni')
+```
+
+We find that the interaction is accounted for by the difference in the last block for the set of trials with the untrained hand and washout. 
+
+While the lack of a difference in the first block might be explained by high compensation during the first trial of washout, the lack of a difference in the second block is due to high variability for compensation in the second block for the untrained hand (see comparison of means below).
+```{r}
+Q1Land1WComparisonMeans()
+```
+
+# NOTES
+To do:
+compare washout in part 2 with baseline in part 1
+Analyze part 1: compare baseline across hands, analyze learning curve for mirror trials, analyze washout blocks 1 and 2 only
