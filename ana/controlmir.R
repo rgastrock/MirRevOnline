@@ -3509,10 +3509,316 @@ plotSexCtrlPL <- function(groups = c('far', 'mid', 'near'), sexes = c('Male','Fe
   }
 }
 
+#Statistics-----
+# First, we focus on ALIGNED trials: both hands
+# Angular reach devs are not comparable across target locations
+# We can use percentage of compensation instead
 
+getAlignedGroupPercentCompensation <- function(groups = c('far', 'mid', 'near')){
+  
+  for(group in groups){
+    
+    data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv', group), check.names = FALSE)
+    trialno <- data$trial
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)])
+      for (angleidx in 1:length(subdat)){
+        angle <- subdat[angleidx]
+        if(!is.na(angle) && group == 'far'){
+          subdat[angleidx] <- (angle/170)*100 #full compensation for far targets is 170 deg
+        } else if (!is.na(angle) && group == 'mid'){
+          subdat[angleidx] <- (angle/90)*100 #full compensation for mid targets is 90 deg
+        } else if(!is.na(angle) && group == 'near'){
+          subdat[angleidx] <- (angle/10)*100 #full compensation for near targets is 10 deg
+        }
+      }
+      data[trial, 2:length(data)] <- subdat
+    }
+    write.csv(data, file=sprintf('data/controlmironline-master/data/statistics/%s_Aligned_PercentCompensation.csv', group), row.names = F) 
+  }
+}
 
+#blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+#hand is either 'trained' for the first one they use, or 'untrained' for the hand they switch to
+getAlignedBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, hand) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmironline-master/data/statistics/%s_Aligned_PercentCompensation.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    percentcomp <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        percentcomp <- c(percentcomp, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, percentcomp)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$hand <- hand
+  return(LCaov)
+  
+}
 
+#check target by block within each aligned period for each hand
+alignedLearningANOVA <- function(hands = c('trained', 'untrained')) {
+  for(hand in hands){
+    if(hand == 'trained'){
+      blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+    } else if(hand == 'untrained'){
+      blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+    }
+    
+    LC4aov <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand)                      
+    
+    #looking into interaction below:
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Compensation during aligned trials across targets and blocks, %s hand:\n', hand))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
 
+#follow up: main effect of target with trained hand
+trainedHandComparisonMeans <- function(hand='trained'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand) 
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+trainedHandComparisons <- function(hand='trained', method='bonferroni'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand) 
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+trainedHandComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- trainedHandComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#compare target and block across hands (3x3x2)
+getAlignedBlockedLearningAOV2Hands <- function(handA, handB){
+  LC4aov <- c()
+  hands <- c(handA, handB)
+  for(hand in hands){
+    if(hand == 'trained'){
+      blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+    } else if(hand == 'untrained'){
+      blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+    }
+    
+    data <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand)
+    LC4aov <- rbind(LC4aov, data)
+  }
+  
+  #need to make some columns as factors for ANOVA
+  LC4aov$target <- as.factor(LC4aov$target)
+  LC4aov$block <- as.factor(LC4aov$block)
+  LC4aov$hand <- factor(LC4aov$hand, levels = c(hands[1], hands[2])) #keeps order consistent with others
+  return(LC4aov)
+}
+
+alignedLearningANOVA2Hands <- function(handA, handB) {
+  
+  LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)                      
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$quadrant, LC4aov$percentcomp)
+  #interaction.plot(LC4aov$block, LC4aov$quadrant, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(target, block, hand), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Quadrants %s and %s:\n', quadrantA, quadrantB))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+# main effect: block, hand, interaction: targetxblock, targetXhand
+# targetxblock does violates sphericity and is not significant under GG
+# hand can be explained by targetxhand interaction
+# follow ups for main effect of block and interaction of targetxhand
+
+#main effect of block
+blockHandComparisonMeans <- function(handA = 'trained', handB = 'untrained'){
+  LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)  
+  
+  #interaction.plot(LC4aov$block, LC4aov$hand, LC4aov$percentcomp)
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean) #this will be mean for each block, regardless of target and hand
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+blockHandComparisons <- function(handA = 'trained', handB = 'untrained', method='bonferroni'){
+  LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)  
+  
+  #interaction.plot(LC4aov$block, LC4aov$hand, LC4aov$percentcomp)
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean) #this will be mean for each block, regardless of target and hand
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  firstvssecond <- c(-1,1,0)
+  firstvslast <- c(-1,0,1)
+  secondvslast <- c(0,-1,1)
+  
+  contrastList <- list('First block vs. Second block'=firstvssecond, 'First block vs. Last block'=firstvslast, 'Second block vs. Last block'=secondvslast)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+blockHandComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- blockHandComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#interaction target x hand
+handComparisonMeans <- function(handA = 'trained', handB = 'untrained'){
+  LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)  
+  
+  LC4aov <- aggregate(percentcomp ~ target* hand* participant, data=LC4aov, FUN=mean) #regardless of block, the mean for every target within each hand
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("target", "hand"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'hand'))
+  print(cellmeans)
+  
+}
+
+handComparisons <- function(handA = 'trained', handB = 'untrained', method='bonferroni'){
+  LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)   
+  
+  interaction.plot(LC4aov$target, LC4aov$hand, LC4aov$percentcomp)
+  
+  LC4aov <- aggregate(percentcomp ~ target* hand* participant, data=LC4aov, FUN=mean) #regardless of target, the mean for every block within each quadrant
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("target", "hand"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  far_trainedvsfar_untrained <- c(-1,0,0,1,0,0)
+  mid_trainedvmid_untrained <- c(0,-1,0,0,1,0)
+  near_trainedvsnear_untrained <- c(0,0,-1,0,0,1)
+  mid_trainedvsnear_trained <- c(0,-1,1,0,0,0) #we know this had a difference from the earlier test
+  
+  contrastList <- list('Far_trained vs. Far_untrained'=far_trainedvsfar_untrained, 'Mid_trained vs. Mid_untrained'=mid_trainedvmid_untrained, 'Near_trained vs. Near_untrained'=near_trainedvsnear_untrained,
+                       'Mid_trained vs. Near_trained'=mid_trainedvsnear_trained)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'hand')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+handComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- handComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+# Next, we focus on MIRROR REVERSED TRIALS
+
+#get far reach devs corrected
+# convert to percent of compensation
+#run tests
 
 
 

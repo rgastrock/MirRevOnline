@@ -316,7 +316,7 @@ getMirroredParticipantLearningCtrlGen <- function(filename){
   task1adat <- adat[which(adat$taskno == 1),]
   task2adat <- adat[which(adat$taskno == 2),]
   
-  #Task 1: remove biases
+  #Task 1: remove biases (from 9 different targets)
   biases <- aggregate(circ_rd ~ targetangle_deg, data= task1adat, FUN = median.circular)
   #get only biases for locations used in mirrored (quad 1: 5, 45, 85)
   #biases <- biases[which(biases$targetangle_deg == c(5, 45, 85)),]
