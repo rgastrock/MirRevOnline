@@ -3817,13 +3817,169 @@ handComparisonsEffSize <- function(method = 'bonferroni'){
 # Next, we focus on MIRROR REVERSED TRIALS
 
 #get far reach devs corrected
+getMirrorCorrectedFarAngDevs <- function(group = 'far'){
+  
+  data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+  
+  trialno <- data$trial
+  #postrials <- c(1:21, 64:126)
+  
+  for(trial in trialno){
+    subdat <- as.numeric(data[trial, 2:length(data)])
+    
+    for (angleidx in 1:length(subdat)){
+      angle <- subdat[angleidx]
+      if (group == 'far' && angle < -90 && !is.na(angle)){
+        subdat[angleidx] <- angle + 360
+      }
+    }
+    
+    data[trial, 2:length(data)] <- subdat
+  }
+  return(data)
+}
 # convert to percent of compensation
+getMirrorGroupPercentCompensation <- function(groups = c('far', 'mid', 'near')){
+  
+  for(group in groups){
+    #far group
+    if (group == 'far'){
+      data <- getMirrorCorrectedFarAngDevs()
+      trialno <- data$trial
+      #postrials <- c(1:21, 64:126)
+      
+      for(trial in trialno){
+        subdat <- as.numeric(data[trial, 2:length(data)])
+        for (angleidx in 1:length(subdat)){
+          angle <- subdat[angleidx]
+          if (!is.na(angle)){
+            subdat[angleidx] <- (angle/170)*100 #full compensation for far targets is 170 deg
+          }
+        }
+        data[trial, 2:length(data)] <- subdat
+      }
+    } else {
+      data <- read.csv(file=sprintf('data/controlmironline-master/data/processed/%s_MirCtrl.csv', group), check.names = FALSE)
+      trialno <- data$trial
+      #postrials <- c(1:21, 64:126)
+      
+      for(trial in trialno){
+        subdat <- as.numeric(data[trial, 2:length(data)])
+        for (angleidx in 1:length(subdat)){
+          angle <- subdat[angleidx]
+          if (!is.na(angle) && group == 'mid'){
+            subdat[angleidx] <- (angle/90)*100 #full compensation for mid targets is 90 deg
+          } else if(!is.na(angle) && group == 'near'){
+            subdat[angleidx] <- (angle/10)*100 #full compensation for near targets is 10 deg
+          }
+        }
+        data[trial, 2:length(data)] <- subdat
+      }
+    }
+    write.csv(data, file=sprintf('data/controlmironline-master/data/statistics/%s_Mirror_PercentCompensation.csv', group), row.names = F) 
+    
+  }
+  
+}
 #run tests
+getMirrorBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmironline-master/data/statistics/%s_Mirror_PercentCompensation.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    percentcomp <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every three trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        percentcomp <- c(percentcomp, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, percentcomp)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  return(LCaov)
+  
+}
 
+#3x3 anova (target x block)
+mirrorANOVA <- function() {
+  
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  
+  
+  LC4aov <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)                  
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(target, block), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  #cat(sprintf('Quadrant %s:\n', quadrant))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
 
+# MirrorComparisonMeans <- function(){
+#   blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+#   
+#   
+#   LC4aov <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)  
+#   secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("target", "block"))
+#   
+#   cellmeans <- emmeans(secondAOV,specs=c('target', 'block'))
+#   print(cellmeans)
+#   
+# }
 
-
-
+# MirrorComparisons <- function(method='sidak'){
+#   blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+#   
+#   
+#   LC4aov <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)  
+#   secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("target", "block"))
+#   
+#   #specify contrasts
+#   #levels of target are: far, mid, near
+#   far1vsfar2 <- c(-1,0,0,1,0,0,0,0,0)
+#   far1vsfar3 <- c(-1,0,0,0,0,0,1,0,0)
+#   far2vsfar3<- c(0,0,0,-1,0,0,1,0,0)
+#   
+#   contrastList <- list('Far first vs Far second'=far1vsfar2, 'Far first vs Far last'=far1vsfar3, 'Far second vs Far last'=far2vsfar3)
+#   
+#   comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block')), contrastList, adjust=method)
+#   
+#   print(comparisons)
+#   
+# }
 
 
 
