@@ -1974,7 +1974,7 @@ getBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, q
   
 }
 
-learningANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
+learningANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L')) {
   for(quadrant in quadrants){
     if(quadrant == '1'){
       blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
@@ -1986,8 +1986,6 @@ learningANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
       blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
     } else if(quadrant == '1L'){
       blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
-    } else if(quadrant == '1W'){
-      blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
     }
     
     LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)                      
@@ -2056,14 +2054,81 @@ quadrant4ComparisonsEffSize <- function(method = 'bonferroni'){
   print(effectsize)
 }
 
+#work with angular reach deviations for washout
+# blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, quadrant) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    angdev <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every three trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        angdev <- c(angdev, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, angdev)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$quadrant <- quadrant
+  return(LCaov)
+  
+}
+
+washoutLearningANOVA <- function(quadrant='1W') {
+
+    blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+
+    
+    LC4aov <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)                      
+    
+    #looking into interaction below:
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Quadrant %s:\n', quadrant))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
 #follow up on washout (main effect of block)
 washoutComparisonMeans <- function(quadrant='1W'){
   blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
-  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  LC4aov <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)
   
-  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
   LC4aov$participant <- as.factor(LC4aov$participant)
-  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="block")
   
   cellmeans <- emmeans(secondAOV,specs=c('block'))
   print(cellmeans)
@@ -2072,11 +2137,11 @@ washoutComparisonMeans <- function(quadrant='1W'){
 
 washoutComparisons <- function(quadrant='1W', method='bonferroni'){
   blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
-  LC4aov <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+  LC4aov <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)
   
-  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
   LC4aov$participant <- as.factor(LC4aov$participant)
-  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="block")
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="block")
   
   #specify contrasts
   #levels of target are: Q1w_1, Q1W_2, Q1W_3
@@ -2258,8 +2323,111 @@ Q1Land1WComparisonsEffSize <- function(method = 'bonferroni'){
   print(effectsize)
 }
 
+#comparing washout of untrained hand with baseline of untrained hand
+RAEUntrainedHandANOVA <- function() {
+  
+  blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
+  LC_aligned <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand='untrained')
+  colnames(LC_aligned) <- c('target', 'participant','block','angdev','session')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_washout <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant='1W')
+  colnames(LC_washout) <- c('target', 'participant','block','angdev','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_aligned <- LC_aligned[which(LC_aligned$participant %in% LC_washout$participant),]
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$session <- factor(LC4aov$session, levels = c('untrained','1W'))
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing angular reach deviations during washout trials with aligned trials across targets and blocks, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
 
+#main effect of block and a block by session interaction: look at interaction
+untrainedHandSessionComparisonMeans <- function(){
+  blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
+  LC_aligned <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand='untrained')
+  colnames(LC_aligned) <- c('target', 'participant','block','angdev','session')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_washout <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant='1W')
+  colnames(LC_washout) <- c('target', 'participant','block','angdev','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_aligned <- LC_aligned[which(LC_aligned$participant %in% LC_washout$participant),]
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$session <- factor(LC4aov$session, levels = c('untrained','1W'))
+  
+  LC4aov$participant <- as.factor(LC4aov$participant) 
+  
+  LC4aov <- aggregate(angdev ~ block* session* participant, data=LC4aov, FUN=mean) #regardless of target, the mean for every block within each session
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block", "session"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block', 'session'))
+  print(cellmeans)
+  
+}
 
+untrainedHandSessionComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
+  LC_aligned <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand='untrained')
+  colnames(LC_aligned) <- c('target', 'participant','block','angdev','session')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_washout <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant='1W')
+  colnames(LC_washout) <- c('target', 'participant','block','angdev','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_aligned <- LC_aligned[which(LC_aligned$participant %in% LC_washout$participant),]
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$session <- factor(LC4aov$session, levels = c('untrained','1W'))
+  
+  LC4aov$participant <- as.factor(LC4aov$participant) 
+  
+  LC4aov <- aggregate(angdev ~ block* session* participant, data=LC4aov, FUN=mean) #regardless of target, the mean for every block within each session
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block", "session"))
+  
+  interaction.plot(LC4aov$block, LC4aov$session, LC4aov$angdev)
+  #specify contrasts
+  #levels of target are: far, mid, near
+  Baseline_B1vsWashout_B1<- c(-1,0,0,1,0,0)
+  Baseline_B2vsWashout_B2 <- c(0,-1,0,0,1,0)
+  Baseline_B3vsWashout_B3 <- c(0,0,-1,0,0,1)
+  Baseline_B3vsWashout_B1 <- c(0,0,-1,1,0,0)
+  
+  contrastList <- list('Baseline_B1 vs. Washout_B1'=Baseline_B1vsWashout_B1, 'Baseline_B2 vs. Washout_B2'=Baseline_B2vsWashout_B2, 'Baseline_B3 vs. Washout_B3'=Baseline_B3vsWashout_B3,
+                       "Baseline_B3 vs. Washout_B1"=Baseline_B3vsWashout_B1)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block', 'session')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+untrainedHandSessionComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- untrainedHandSessionComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
-
+#effect accounted for by difference between last block of baseline with 1st block of washout
