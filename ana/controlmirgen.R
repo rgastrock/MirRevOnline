@@ -2431,3 +2431,102 @@ untrainedHandSessionComparisonsEffSize <- function(method = 'bonferroni'){
 }
 
 #effect accounted for by difference between last block of baseline with 1st block of washout
+
+#test for retention
+retentionANOVA <- function() {
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(76,15))
+  LC_part1 <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(19,3))
+  LC_part2 <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant='1')
+  colnames(LC_part2) <- c('target', 'participant','block','percentcomp','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)
+
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing angular reach deviations during washout trials with aligned trials across targets and blocks, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#main effect of target
+retentionComparisonMeans <- function(){
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(76,15))
+  LC_part1 <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(19,3))
+  LC_part2 <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant='1')
+  colnames(LC_part2) <- c('target', 'participant','block','percentcomp','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean) #this will be mean for each target, regardless of block and session
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+retentionComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(76,15))
+  LC_part1 <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3), 'last'=c(19,3))
+  LC_part2 <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant='1')
+  colnames(LC_part2) <- c('target', 'participant','block','percentcomp','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean) #this will be mean for each target, regardless of block and session
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within="target")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+retentionComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- retentionComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#effect accounted for by difference between mid and near (near percentages are higher in nature because of how they are calculated)
