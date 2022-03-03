@@ -990,7 +990,7 @@ plotAllTasksCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
        main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   abline(h = c(0, 10, 90, 170), v = c(45, 66, 156), col = 8, lty = 2)
   axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
-  axis(2, at = c(-60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
+  axis(2, at = c(-50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
   
   
   for(group in groups){
@@ -1205,6 +1205,32 @@ getBlockedMirCtrl <- function(group, blockdefs) {
   
 }
 
+getBlockedMirCtrlPercentage <- function(group, blockdefs) {
+  
+  curves <- read.csv(sprintf('data/controlmironline-master/data/statistics/%s_Mirror_PercentCompensation.csv',group), stringsAsFactors=FALSE, check.names = FALSE) 
+  curves <- curves[,-1] #remove trial rows
+  N <- dim(curves)[2]
+  
+  blocked <- array(NA, dim=c(N,length(blockdefs)))
+  
+  for (ppno in c(1:N)) {
+    
+    for (blockno in c(1:length(blockdefs))) {
+      #for each participant, and every three trials, get the mean
+      blockdef <- blockdefs[[blockno]]
+      blockstart <- blockdef[1]
+      blockend <- blockstart + blockdef[2] - 1
+      samples <- curves[blockstart:blockend,ppno]
+      blocked[ppno,blockno] <- mean(samples, na.rm=TRUE)
+      
+    }
+    
+  }
+  
+  return(blocked)
+  
+}
+
 plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')) {
   
   if (target == 'svg') {
@@ -1228,11 +1254,11 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   
   # # # # # # # # # #
-  # panel B: individual participants in the first trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 1 - 3',ylab='Angular reach deviation (°)',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  # panel B: First trial set - use percentage of compensation
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-10, 200),xlab='Mirror trials 1 - 3',ylab='Amount of compensation (%)',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
 
   mtext('b', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
-  abline(h = c(10,90,170), col = 8, lty = 2)
+  abline(h = c(0, 100), col = 8, lty = 2)
   
   blockdefs <- list(c(1,3))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
@@ -1241,10 +1267,11 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   for (group in groups) {
     
     groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
-    blocked <- getBlockedMirCtrl(group, blockdefs)
+    blocked <- getBlockedMirCtrlPercentage(group, blockdefs)
     colourscheme <- getCtrlColourScheme(group=group)
-    #get 2.5, 50, 97.5% CIs
-    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    #get bootstrapped 2.5, 50, 97.5% CIs of percentages
+    meandist <- getConfidenceInterval(data=blocked, method='b')
+    #meandist <- getAngularReachDevsCI(data = blocked, group = group)
     
     col <- colourscheme[[group]][['S']]
     lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
@@ -1254,15 +1281,15 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   
   axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
-  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  axis(side=2, at=c(0,50, 100, 150),labels=c('0','50','100','150'),cex.axis=1.13, las=2)
   
   
   # # # # # # # # # #
-  # panel C: individual participants in the second trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 4 - 6',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  # panel C: Second trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-10, 200),xlab='Mirror Trials 4 - 6',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
   
   mtext('c', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
-  abline(h = c(10,90,170), col = 8, lty = 2)
+  abline(h = c(0, 100), col = 8, lty = 2)
   
   blockdefs <- list(c(4,3))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
@@ -1271,10 +1298,10 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   for (group in groups) {
     
     groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
-    blocked <- getBlockedMirCtrl(group, blockdefs)
+    blocked <- getBlockedMirCtrlPercentage(group, blockdefs)
     colourscheme <- getCtrlColourScheme(group=group)
     #get 2.5, 50, 97.5% CIs
-    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    meandist <- getConfidenceInterval(data=blocked, method='b')
     
     col <- colourscheme[[group]][['S']]
     lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
@@ -1284,15 +1311,15 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   
   axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
-  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  axis(side=2, at=c(0,50, 100, 150),labels=c('0','50','100','150'),cex.axis=1.13, las=2)
   
   
   # # # # # # # # # #
-  # panel D: individual participants in the last trial set
-  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-20, 200),xlab='Mir Trials 76 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
+  # panel D: Last trial set
+  plot(c(0,4),c(0,0),col=rgb(0.5,0.5,0.5),type='l',lty=2,xlim=c(0.5,3.5),ylim=c(-10, 200),xlab='Mirror Trials 76 - 90',ylab='',xaxt='n',yaxt='n',bty='n',main='',font.main=1, cex.lab=1.10)
   
   mtext('d', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
-  abline(h = c(10,90,170), col = 8, lty = 2)
+  abline(h = c(0, 100), col = 8, lty = 2)
   
   blockdefs <- list(c(76,15))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
@@ -1301,10 +1328,10 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   for (group in groups) {
     
     groupno <- groupno + 1 #counter for group, so that we can refer to it in x coordinates
-    blocked <- getBlockedMirCtrl(group, blockdefs)
+    blocked <- getBlockedMirCtrlPercentage(group, blockdefs)
     colourscheme <- getCtrlColourScheme(group=group)
     #get 2.5, 50, 97.5% CIs
-    meandist <- getAngularReachDevsCI(data = blocked, group = group)
+    meandist <- getConfidenceInterval(data=blocked, method='b')
     
     col <- colourscheme[[group]][['S']]
     lines(x=rep(groupno,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
@@ -1314,7 +1341,7 @@ plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')
   
   
   axis(side=1, at=c(1,2,3),labels=c('far','mid','near'),cex.axis=1.13)
-  axis(side=2, at=c(0,10,90,170),labels=c('0','10','90','170'),cex.axis=1.13, las=2)
+  axis(side=2, at=c(0,50, 100, 150),labels=c('0','50','100','150'),cex.axis=1.13, las=2)
   
   
   if (target == 'svg') {
@@ -3761,14 +3788,14 @@ mirrorANOVA <- function() {
 
 # MirrorComparisonMeans <- function(){
 #   blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
-#   
-#   
-#   LC4aov <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)  
+# 
+# 
+#   LC4aov <- getMirrorBlockedLearningAOV(blockdefs=blockdefs)
 #   secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("target", "block"))
-#   
+# 
 #   cellmeans <- emmeans(secondAOV,specs=c('target', 'block'))
 #   print(cellmeans)
-#   
+# 
 # }
 
 # MirrorComparisons <- function(method='sidak'){

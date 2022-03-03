@@ -463,6 +463,132 @@ getMirroredGroupLearningCtrlGenCircularCI <- function(groups = c('far', 'mid', '
   }
 }
 
+
+
+plotBlockedLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1D_BlockedLearningCtrlGen.svg', width=14, height=8.5, pointsize=13, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  par(mar=c(4,4,2,0.1)) #4,4,2,.1
+  
+  
+  
+  layout(matrix(c(1,2), nrow=2, ncol=1, byrow = TRUE), widths=c(2), heights=c(1,1))
+  #layout(matrix(c(1,1,1,2,3,4), 2, 3, byrow = TRUE), widths=c(2,2,2), heights=c(1,1))
+  
+  
+  # # # # # # # # # #
+  # panel A: Learning Curves for all groups across all trials
+  plotLearningCtrlGen()
+  #mtext('A', side=3, outer=TRUE, at=c(0,1), line=-1, adj=0, padj=1)
+  mtext('a', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  
+  
+  # # # # # # # # # #
+  # panel B: First trial set - use percentage of compensation
+  plotBlockedLearningPercentages()
+  
+  mtext('b', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
+  
+
+  
+  
+  if (target == 'svg') {
+    dev.off()
+  }
+}
+
+plotBlockedLearningPercentages<- function(groups = c('far', 'mid', 'near'), quadrants = c('1', '4', '2', '1A', '1L', '1W'), target='inline') {
+  
+  
+  if (target=='svg') {
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1C_LearningCtrlGenPercentages.svg', width=14, height=8.5, pointsize=14, system_fonts=list(sans="Arial"))
+  }
+  
+  
+  
+  # create plot
+  #meanGroupReaches <- list() #empty list so that it plots the means last
+  
+  #NA to create empty plot
+  # could maybe use plot.new() ?
+  plot(NA, NA, xlim = c(0,127), ylim = c(-200,200), 
+       xlab = "Block", ylab = "Amount of compensation (%)", frame.plot = FALSE, #frame.plot takes away borders
+       main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+  
+  lim <- par('usr')
+  rect(85, lim[3]-1, 126, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
+  abline(h = c(0, 100), v = c(21, 42, 63, 84, 105), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  
+  axis(1, at = c(4, 11, 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95, 102, 109, 116, 123),
+       labels = c('first', 'second', 'last', 'first', 'second', 'last', 'first', 'second', 'last', 'first', 'second', 'last', 'first', 'second', 'last', 'first', 'second', 'last'), las=2) #tick marks for x axis
+  axis(2, at = c(-150, -100, -50, 0, 50, 100, 150), las = 2) #tick marks for y axis
+  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Quad 1', 'Quad 4', 'Quad 2', 'Quad 1', 'Quad 1 switch', 'Quad 1 washout'), line = -2, tick = FALSE) #tick marks for x axis
+  
+  for(quadrant in quadrants){
+    if(quadrant == '1'){
+      blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
+    } else if(quadrant == '4'){
+      blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+    } else if(quadrant == '2'){
+      blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+    } else if(quadrant == '1A'){
+      blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
+    } else if(quadrant == '1L'){
+      blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+    } else if(quadrant == '1W'){
+      blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+    }
+    
+    
+    groupno <- 0
+    blocked <- getBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant) 
+    for(group in groups){
+      
+      groupno <- groupno + 1
+      colourscheme <- getCtrlColourScheme(group=group)
+      col <- colourscheme[[group]][['S']]
+      
+      subblocked <- blocked[which(blocked$target == group),]
+      blocks <- unique(subblocked$block)
+      for(blockname in blocks){
+        subdat <- subblocked[which(subblocked$block == blockname),]
+        meandist <- getConfidenceInterval(data=subdat$percentcomp, method='b')
+        
+        trialstart <- blockdefs[blockname][[1]][1] - 1
+        if(blockname == 'first'){
+          trialstart <- trialstart + 2
+        } else if (blockname == 'second'){
+          trialstart <- trialstart + 7
+        } else if (blockname == 'last'){
+          trialstart <- trialstart - 2
+        }
+        
+        X <- trialstart + groupno
+        
+        lines(x=rep(X,2),y=c(meandist[[1]], meandist[[3]]),col=col) #lower and upper CI
+        points(x=X,y=meandist[[2]],pch=16,cex=1.5,col=col) #50% plotted as a point
+      }
+    }
+  }
+  
+  #add legend
+  # legend(1,-100,legend=c('far target','mid target', 'near target'),
+  #        col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
+  #        lty=1,bty='n',cex=1,lwd=2)
+  
+  #close everything if you saved plot as svg
+  if (target=='svg') {
+    dev.off()
+  }
+}
+
+
 plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   
@@ -510,8 +636,8 @@ plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline'
   lines(x = c(105:131), y = greyfar, col = 8, lty = 2) 
   
   axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
-  axis(2, at = c(-60, -30, -20, -10, 0, 10, 20, 30, 60, 90, 130, 170), las = 2) #tick marks for y axis
-  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
+  axis(2, at = c(-50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
+  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Quad 1', 'Quad 4', 'Quad 2', 'Quad 1', 'Quad 1 switch', 'Quad 1 washout'), line = -2, tick = FALSE) #tick marks for x axis
   
   
   for(group in groups){
@@ -620,7 +746,7 @@ plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline'
   #add legend
   legend(106,220,legend=c('far target','mid target', 'near target'),
          col=c(colourscheme[['far']][['S']],colourscheme[['mid']][['S']],colourscheme[['near']][['S']]),
-         lty=1,bty='n',cex=1,lwd=2)
+         lty=1,bty='n',lwd=2, cex=1)
   
   #close everything if you saved plot as svg
   if (target=='svg') {
@@ -676,7 +802,7 @@ plotLearningCtrlGenCircular <- function(groups = c('far', 'mid', 'near'), target
   
   axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
   axis(2, at = c(-170, -130, -90, -50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
-  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
+  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Quad 1', 'Quad 4', 'Quad 2', 'Quad 1', 'Quad 1 switch', 'Quad 1 washout'), line = -2, tick = FALSE) #tick marks for x axis
   
   
   for(group in groups){
