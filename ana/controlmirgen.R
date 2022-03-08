@@ -2719,7 +2719,7 @@ getBlockedMTAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, quadran
   
 }
 
-movementtimeANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L')) {
+movementtimeANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
   for(quadrant in quadrants){
     if(quadrant == '1'){
       blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
@@ -2731,16 +2731,13 @@ movementtimeANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L')) {
       blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
     } else if(quadrant == '1L'){
       blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+    } else if(quadrant == '1W'){
+      blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
     }
     
     LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)                      
-    # movement time and path length have missing data due to outlier removal performed in pre processing
-    # we only consider participants with complete cases for statistical analyses
-    NaNdat <- LC4aov[which(LC4aov$movementtime == 'NaN'),] #gets all movement times with missing data
-    ppdel <- unique(NaNdat$participant) #participants to remove from analyses: 14 in total
-    LC4aov <- LC4aov[complete.cases(LC4aov),]
     #looking into interaction below:
-    #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$movementtime)
     
     #learning curve ANOVA's
     # for ez, case ID should be a factor:
