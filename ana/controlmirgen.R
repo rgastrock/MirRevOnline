@@ -1292,23 +1292,37 @@ getGroupCtrlGenMT <- function(groups = c('far', 'mid', 'near')){
     }
     
     #outlier removal
-    for (trialno in dataoutput$trial){
-      #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-      ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-      #print(max(ndat, na.rm=T))
-      trialmu <- mean(ndat, na.rm = TRUE)
-      trialsigma <- sd(ndat, na.rm = TRUE)
-      #print(trialsigma)
-      trialclip <- abs(trialmu) + (trialsigma * 2)
-      
-      ndat[which(abs(ndat) > trialclip)] <- NA
-      
-      dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-    }
+    # deleted_trials_target <- c()
+    # total_trials_target <- c()
+    # for (trialno in dataoutput$trial){
+    #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+    #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+    #   #print(max(ndat, na.rm=T))
+    #   trialmu <- mean(ndat, na.rm = TRUE)
+    #   trialsigma <- sd(ndat, na.rm = TRUE)
+    #   #print(trialsigma)
+    #   trialclip <- abs(trialmu) + (trialsigma * 2)
+    #   
+    #   #keep track of trial removed
+    #   trialtot <- length(ndat[which(!is.na(ndat) == TRUE)])
+    #   trialdel <- length(ndat[which(abs(ndat) > trialclip)])
+    #   #cat(sprintf('trial %d :     %d deleted out of %d\n',trialno,trialdel,trialtot))
+    #   deleted_trials_target <- c(deleted_trials_target, trialdel)
+    #   total_trials_target <- c(total_trials_target, trialtot)
+    #   
+    #   ndat[which(abs(ndat) > trialclip)] <- NA
+    #   
+    #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+    # }
+    # #have an output to say how many trials have been removed for each target
+    # deletions <- data.frame(deleted_trials_target, total_trials_target)
+    # del <- sum(deletions$deleted_trials_target)
+    # tot <- sum(deletions$total_trials_target)
+    # perc <- (del/tot)*100
+    # cat(sprintf('%s target : %d deleted out of %d total trials for %f percent\n',group, del, tot, perc))
     
     #return(dataoutput)
     write.csv(dataoutput, file=sprintf('data/controlmirgenonline-master/data/processed/%s_MovementTime.csv', group), row.names = F)
-    #can keep track of deleted trials here, by using the saved csv file or counting NA values in dataoutput
   }
 }
 
@@ -1945,7 +1959,7 @@ plotCtrlGenHeatmaps <- function(groups = c('far', 'mid', 'near'), target = 'inli
   }
 }
 
-# Statistics----
+# Statistics (Learning)----
 # Angular reach devs are not comparable across target locations
 # We can use percentage of compensation instead
 
@@ -2656,3 +2670,113 @@ retentionComparisonsEffSize <- function(method = 'bonferroni'){
 }
 
 #effect accounted for by difference between mid and near (near percentages are higher in nature because of how they are calculated)
+
+#Statistics (Movement time)-----
+
+getBlockedMTAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, quadrant) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmirgenonline-master/data/processed/%s_MovementTime.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    movementtime <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every three trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        movementtime <- c(movementtime, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, movementtime)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$quadrant <- quadrant
+  return(LCaov)
+  
+}
+
+movementtimeANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L')) {
+  for(quadrant in quadrants){
+    if(quadrant == '1'){
+      blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
+    } else if(quadrant == '4'){
+      blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+    } else if(quadrant == '2'){
+      blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+    } else if(quadrant == '1A'){
+      blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
+    } else if(quadrant == '1L'){
+      blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+    }
+    
+    LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)                      
+    # movement time and path length have missing data due to outlier removal performed in pre processing
+    # we only consider participants with complete cases for statistical analyses
+    NaNdat <- LC4aov[which(LC4aov$movementtime == 'NaN'),] #gets all movement times with missing data
+    ppdel <- unique(NaNdat$participant) #participants to remove from analyses: 14 in total
+    LC4aov <- LC4aov[complete.cases(LC4aov),]
+    #looking into interaction below:
+    #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Quadrant %s:\n', quadrant))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
