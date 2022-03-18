@@ -3536,7 +3536,7 @@ plotSexCtrlPL <- function(groups = c('far', 'mid', 'near'), sexes = c('Male','Fe
   }
 }
 
-#Statistics-----
+#Statistics (Learning)-----
 # First, we focus on ALIGNED trials: both hands
 # Angular reach devs can be compared, as perfect compensation is always at zero
 
@@ -4092,3 +4092,5 @@ RAETrainedTargetsComparisonsEffSize <- function(method = 'bonferroni'){
   #print(comparisons)
   print(effectsize)
 }
+
+#Statistics (Movement Time)----

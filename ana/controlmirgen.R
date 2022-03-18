@@ -2748,24 +2748,695 @@ movementtimeANOVA <- function(quadrants = c('1', '4', '2', '1A', '1L', '1W')) {
   }
 }
 
+# follow up Q1: significant main and interaction effects, look into interaction
+quadrant1MTComparisonMeans <- function(quadrant='1'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block'))
+  print(cellmeans)
+  
+}
 
+#we know from the plot that movement time decreases across blocks, but interesting to see target differences within each block
 
+quadrant1MTComparisons <- function(quadrant='1', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  #first block
+  farvsmid_b1 <- c(-1,1,0,0,0,0,0,0,0)
+  farvsnear_b1 <- c(-1,0,1,0,0,0,0,0,0)
+  midvsnear_b1 <- c(0,-1,1,0,0,0,0,0,0)
+  #second
+  farvsmid_b2 <- c(0,0,0,-1,1,0,0,0,0)
+  farvsnear_b2 <- c(0,0,0,-1,0,1,0,0,0)
+  midvsnear_b2 <- c(0,0,0,0,-1,1,0,0,0)
+  #last
+  farvsmid_b3 <- c(0,0,0,0,0,0,-1,1,0)
+  farvsnear_b3 <- c(0,0,0,0,0,0,-1,0,1)
+  midvsnear_b3 <- c(0,0,0,0,0,0,0,-1,1)
+  
+  contrastList <- list('1st block: Far vs. Mid'=farvsmid_b1, '1st block: Far vs. Near'=farvsnear_b1, '1st block: Mid vs. Near'=midvsnear_b1,
+                       '2nd block: Far vs. Mid'=farvsmid_b2, '2nd block: Far vs. Near'=farvsnear_b2, '2nd block: Mid vs. Near'=midvsnear_b2,
+                       'last block: Far vs. Mid'=farvsmid_b3, 'last block: Far vs. Near'=farvsnear_b3, 'last block: Mid vs. Near'=midvsnear_b3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant1MTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- quadrant1MTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+# follow up Q4: significant main effects only
+#main effect of target
+quadrant4MTComparisonMeansTargetEffect <- function(quadrant='4'){
+  blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
 
+quadrant4MTComparisonsTargetEffect <- function(quadrant='4', method='bonferroni'){
+  blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant4MTComparisonsEffSizeTargetEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant4MTComparisonsTargetEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+#main effect of block
+quadrant4MTComparisonMeansBlockEffect <- function(quadrant='4'){
+  blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
 
+quadrant4MTComparisonsBlockEffect <- function(quadrant='4', method='bonferroni'){
+  blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant4MTComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant4MTComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+# follow up Q2: significant main effects only
 
+#main effect of target
+quadrant2MTComparisonMeansTargetEffect <- function(quadrant='2'){
+  blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
 
+quadrant2MTComparisonsTargetEffect <- function(quadrant='2', method='bonferroni'){
+  blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant2MTComparisonsEffSizeTargetEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant2MTComparisonsTargetEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+#main effect of block
+quadrant2MTComparisonMeansBlockEffect <- function(quadrant='2'){
+  blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
 
+quadrant2MTComparisonsBlockEffect <- function(quadrant='2', method='bonferroni'){
+  blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+quadrant2MTComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant2MTComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
+# follow up Q1A: main effect of target
 
+#main effect of target
+quadrant1AMTComparisonMeansTargetEffect <- function(quadrant='1A'){
+  blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+quadrant1AMTComparisonsTargetEffect <- function(quadrant='1A', method='bonferroni'){
+  blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+quadrant1AMTComparisonsEffSizeTargetEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant1AMTComparisonsTargetEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+# follow up Q1L: significant main effects only (interaction not sig under GG)
+
+#main effect of target
+quadrant1LMTComparisonMeansTargetEffect <- function(quadrant='1L'){
+  blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+quadrant1LMTComparisonsTargetEffect <- function(quadrant='1L', method='bonferroni'){
+  blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+quadrant1LMTComparisonsEffSizeTargetEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant1LMTComparisonsTargetEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#main effect of block
+quadrant1LMTComparisonMeansBlockEffect <- function(quadrant='1L'){
+  blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+quadrant1LMTComparisonsBlockEffect <- function(quadrant='1L', method='bonferroni'){
+  blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  LC4aov <- aggregate(movementtime ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+quadrant1LMTComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- quadrant1LMTComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+# follow up Q1W: significant main and interaction effects, look into interaction
+quadrant1WMTComparisonMeans <- function(quadrant='1W'){
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block'))
+  print(cellmeans)
+  
+}
+
+#we know from the plot that movement time decreases across blocks, but interesting to see target differences within each block
+
+quadrant1WMTComparisons <- function(quadrant='1W', method='bonferroni'){
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC4aov <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  #first block
+  farvsmid_b1 <- c(-1,1,0,0,0,0,0,0,0)
+  farvsnear_b1 <- c(-1,0,1,0,0,0,0,0,0)
+  midvsnear_b1 <- c(0,-1,1,0,0,0,0,0,0)
+  #second
+  farvsmid_b2 <- c(0,0,0,-1,1,0,0,0,0)
+  farvsnear_b2 <- c(0,0,0,-1,0,1,0,0,0)
+  midvsnear_b2 <- c(0,0,0,0,-1,1,0,0,0)
+  #last
+  farvsmid_b3 <- c(0,0,0,0,0,0,-1,1,0)
+  farvsnear_b3 <- c(0,0,0,0,0,0,-1,0,1)
+  midvsnear_b3 <- c(0,0,0,0,0,0,0,-1,1)
+  
+  contrastList <- list('1st block: Far vs. Mid'=farvsmid_b1, '1st block: Far vs. Near'=farvsnear_b1, '1st block: Mid vs. Near'=midvsnear_b1,
+                       '2nd block: Far vs. Mid'=farvsmid_b2, '2nd block: Far vs. Near'=farvsnear_b2, '2nd block: Mid vs. Near'=midvsnear_b2,
+                       'last block: Far vs. Mid'=farvsmid_b3, 'last block: Far vs. Near'=farvsnear_b3, 'last block: Mid vs. Near'=midvsnear_b3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+quadrant1WMTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- quadrant1WMTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#Next, we want to compare 2 quadrants with each other (3X3X2)
+#add an identifier of which quadrant it is, regardless of block
+getBlockedMTAOV2Quads <- function(quadrantA, quadrantB){
+  LC4aov <- c()
+  quadrants <- c(quadrantA, quadrantB)
+  for(quadrant in quadrants){
+    if(quadrant == '1'){
+      blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(19,3))
+    } else if(quadrant == '4'){
+      blockdefs <- list('first'=c(22,3),'second'=c(25,3),'last'=c(40,3))
+    } else if(quadrant == '2'){
+      blockdefs <- list('first'=c(43,3),'second'=c(46,3),'last'=c(61,3))
+    } else if(quadrant == '1A'){
+      blockdefs <- list('first'=c(64,3),'second'=c(67,3),'last'=c(82,3))
+    } else if(quadrant == '1L'){
+      blockdefs <- list('first'=c(85,3),'second'=c(88,3),'last'=c(103,3))
+    } else if(quadrant == '1W'){
+      blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+    }
+    
+    data <- getBlockedMTAOV(blockdefs=blockdefs, quadrant=quadrant)
+    LC4aov <- rbind(LC4aov, data)
+  }
+  
+  #need to make some columns as factors for ANOVA
+  LC4aov$target <- as.factor(LC4aov$target)
+  LC4aov$block <- as.factor(LC4aov$block)
+  LC4aov$quadrant <- factor(LC4aov$quadrant, levels = c(quadrants[1], quadrants[2])) #keeps order consistent with others
+  return(LC4aov)
+}
+
+MTANOVA2Quads <- function(quadrantA, quadrantB) {
+  
+  LC4aov <- getBlockedMTAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$quadrant, LC4aov$movementtime)
+  #interaction.plot(LC4aov$block, LC4aov$quadrant, LC4aov$movementtime)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(target, block, quadrant), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Quadrants %s and %s:\n', quadrantA, quadrantB))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#we'd be interested in whether target MT's in the 3 blocks we investigate, will differ between 2 quadrants
+#therefore, we'd need a targetxblockxquadrant interaction
+
+#Follow up on Q1 vs Q4
+quadrant1and4MTComparisonMeans <- function(quadrantA = '1', quadrantB = '4'){
+  LC4aov <- getBlockedMTAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","quadrant"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block', 'quadrant'))
+  print(cellmeans)
+  
+}
+
+Q1and4MTComparisons <- function(quadrantA='1', quadrantB='4', method='bonferroni'){
+  LC4aov <- getBlockedMTAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)  
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","quadrant"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  far_b1_q1vsfar_b1_q4 <- c(-1,0,0,0,0,0,0,0,0,
+                            1,0,0,0,0,0,0,0,0)
+  far_b2_q1vsfar_b2_q4 <- c(0,0,0,-1,0,0,0,0,0,
+                            0,0,0,1,0,0,0,0,0)
+  far_b3_q1vsfar_b3_q4 <- c(0,0,0,0,0,0,-1,0,0,
+                            0,0,0,0,0,0,1,0,0)
+  
+  mid_b1_q1vsmid_b1_q4 <- c(0,-1,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,0,0)
+  mid_b2_q1vsmid_b2_q4 <- c(0,0,0,0,-1,0,0,0,0,
+                            0,0,0,0,1,0,0,0,0)
+  mid_b3_q1vsmid_b3_q4 <- c(0,0,0,0,0,0,0,-1,0,
+                            0,0,0,0,0,0,0,1,0)
+  
+  near_b1_q1vsnear_b1_q4 <- c(0,0,-1,0,0,0,0,0,0,
+                            0,0,1,0,0,0,0,0,0)
+  near_b2_q1vsnear_b2_q4 <- c(0,0,0,0,0,-1,0,0,0,
+                            0,0,0,0,0,1,0,0,0)
+  near_b3_q1vsnear_b3_q4 <- c(0,0,0,0,0,0,0,0,-1,
+                            0,0,0,0,0,0,0,0,1)
+  
+
+  contrastList <- list('Q1 vs Q4, first block, Far'=far_b1_q1vsfar_b1_q4, 'Q1 vs Q4, second block, Far'=far_b2_q1vsfar_b2_q4, 'Q1 vs Q4, last block, Far'=far_b3_q1vsfar_b3_q4,
+                       'Q1 vs Q4, first block, Mid'=mid_b1_q1vsmid_b1_q4, 'Q1 vs Q4, second block, Mid'=mid_b2_q1vsmid_b2_q4, 'Q1 vs Q4, last block, Mid'=mid_b3_q1vsmid_b3_q4,
+                       'Q1 vs Q4, first block, Near'=near_b1_q1vsnear_b1_q4, 'Q1 vs Q4, second block, Near'=near_b2_q1vsnear_b2_q4, 'Q1 vs Q4, last block, Near'=near_b3_q1vsnear_b3_q4)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block', 'quadrant')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+Q1and4MTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- Q1and4MTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#Follow up on Q1 and Q1A
+quadrant1and1AMTComparisonMeans <- function(quadrantA = '1', quadrantB = '1A'){
+  LC4aov <- getBlockedMTAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","quadrant"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block', 'quadrant'))
+  print(cellmeans)
+  
+}
+
+Q1and1AMTComparisons <- function(quadrantA='1', quadrantB='1A', method='bonferroni'){
+  LC4aov <- getBlockedMTAOV2Quads(quadrantA=quadrantA, quadrantB=quadrantB)  
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","quadrant"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  far_b1_q1vsfar_b1_q1A <- c(-1,0,0,0,0,0,0,0,0,
+                            1,0,0,0,0,0,0,0,0)
+  far_b2_q1vsfar_b2_q1A <- c(0,0,0,-1,0,0,0,0,0,
+                            0,0,0,1,0,0,0,0,0)
+  far_b3_q1vsfar_b3_q1A <- c(0,0,0,0,0,0,-1,0,0,
+                            0,0,0,0,0,0,1,0,0)
+  
+  mid_b1_q1vsmid_b1_q1A <- c(0,-1,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,0,0)
+  mid_b2_q1vsmid_b2_q1A <- c(0,0,0,0,-1,0,0,0,0,
+                            0,0,0,0,1,0,0,0,0)
+  mid_b3_q1vsmid_b3_q1A <- c(0,0,0,0,0,0,0,-1,0,
+                            0,0,0,0,0,0,0,1,0)
+  
+  near_b1_q1vsnear_b1_q1A <- c(0,0,-1,0,0,0,0,0,0,
+                              0,0,1,0,0,0,0,0,0)
+  near_b2_q1vsnear_b2_q1A <- c(0,0,0,0,0,-1,0,0,0,
+                              0,0,0,0,0,1,0,0,0)
+  near_b3_q1vsnear_b3_q1A <- c(0,0,0,0,0,0,0,0,-1,
+                              0,0,0,0,0,0,0,0,1)
+  
+  
+  contrastList <- list('Q1 vs Q1A, first block, Far'=far_b1_q1vsfar_b1_q1A, 'Q1 vs Q1A, second block, Far'=far_b2_q1vsfar_b2_q1A, 'Q1 vs Q1A, last block, Far'=far_b3_q1vsfar_b3_q1A,
+                       'Q1 vs Q1A, first block, Mid'=mid_b1_q1vsmid_b1_q1A, 'Q1 vs Q1A, second block, Mid'=mid_b2_q1vsmid_b2_q1A, 'Q1 vs Q1A, last block, Mid'=mid_b3_q1vsmid_b3_q1A,
+                       'Q1 vs Q1A, first block, Near'=near_b1_q1vsnear_b1_q1A, 'Q1 vs Q1A, second block, Near'=near_b2_q1vsnear_b2_q1A, 'Q1 vs Q1A, last block, Near'=near_b3_q1vsnear_b3_q1A)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block', 'quadrant')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+Q1and1AMTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- Q1and1AMTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
 
 
