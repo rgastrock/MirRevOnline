@@ -2594,7 +2594,7 @@ retentionANOVA <- function() {
   # for ez, case ID should be a factor:
   LC4aov$participant <- as.factor(LC4aov$participant)
   firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
-  cat('Comparing angular reach deviations during washout trials with aligned trials across targets and blocks, trained hand:\n')
+  cat('Comparing angular reach deviations between part 1 and part 2 of learning, trained hand:\n')
   print(firstAOV[1:3]) #so that it doesn't print the aov object as well
   
 }
@@ -3438,13 +3438,156 @@ Q1and1AMTComparisonsEffSize <- function(method = 'bonferroni'){
   print(effectsize)
 }
 
+#comparing MT washout of untrained hand with baseline of untrained hand
+RAEUntrainedHandMTANOVA <- function() {
+  
+  blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
+  LC_aligned <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='untrained')
+  colnames(LC_aligned) <- c('target', 'participant','block','movementtime','session')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_washout <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_washout) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_aligned <- LC_aligned[which(LC_aligned$participant %in% LC_washout$participant),]
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$session <- factor(LC4aov$session, levels = c('untrained','1W'))
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing movement times during washout trials with aligned trials across targets and blocks, untrained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
 
+#no main effect of session, there are blockxsession and targetxsession interactions, suggesting that block and target effects may differ between sessions
+#but we already know these effects when analyzing baseline in untrained hand and washout after generalization
 
+# Retention MTs
+retentionMTANOVA <- function() {
+  
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC_part1 <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='trained') 
+  LC_part1 <- LC_part1[,-5]
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_part2 <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_part2) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing movement times between part 1 and part 2 during learning, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
 
+#follow up on significant blockxtargetxsession interaction
+part1and2MTComparisonMeans <- function(){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC_part1 <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='trained') 
+  LC_part1 <- LC_part1[,-5]
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_part2 <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_part2) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","session"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block', 'session'))
+  print(cellmeans)
+  
+}
 
+part1and2MTComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC_part1 <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='trained') 
+  LC_part1 <- LC_part1[,-5]
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_part2 <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_part2) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","session"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  far_b1_p1vsfar_b1_p2 <- c(-1,0,0,0,0,0,0,0,0,
+                            1,0,0,0,0,0,0,0,0)
+  far_b2_p1vsfar_b2_p2 <- c(0,0,0,-1,0,0,0,0,0,
+                            0,0,0,1,0,0,0,0,0)
+  far_b3_p1vsfar_b3_p2 <- c(0,0,0,0,0,0,-1,0,0,
+                            0,0,0,0,0,0,1,0,0)
+  
+  mid_b1_p1vsmid_b1_p2 <- c(0,-1,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,0,0)
+  mid_b2_p1vsmid_b2_p2 <- c(0,0,0,0,-1,0,0,0,0,
+                            0,0,0,0,1,0,0,0,0)
+  mid_b3_p1vsmid_b3_p2 <- c(0,0,0,0,0,0,0,-1,0,
+                            0,0,0,0,0,0,0,1,0)
+  
+  near_b1_p1vsnear_b1_p2 <- c(0,0,-1,0,0,0,0,0,0,
+                              0,0,1,0,0,0,0,0,0)
+  near_b2_p1vsnear_b2_p2 <- c(0,0,0,0,0,-1,0,0,0,
+                              0,0,0,0,0,1,0,0,0)
+  near_b3_p1vsnear_b3_p2 <- c(0,0,0,0,0,0,0,0,-1,
+                              0,0,0,0,0,0,0,0,1)
+  
+  
+  contrastList <- list('Part 1 vs 2, first block, Far'=far_b1_p1vsfar_b1_p2, 'Part 1 vs 2, second block, Far'=far_b2_p1vsfar_b2_p2, 'Part 1 vs 2, last block, Far'=far_b3_p1vsfar_b3_p2,
+                       'Part 1 vs 2, first block, Mid'=mid_b1_p1vsmid_b1_p2, 'Part 1 vs 2, second block, Mid'=mid_b2_p1vsmid_b2_p2, 'Part 1 vs 2, last block, Mid'=mid_b3_p1vsmid_b3_p2,
+                       'Part 1 vs 2, first block, Near'=near_b1_p1vsnear_b1_p2, 'Part 1 vs 2, second block, Near'=near_b2_p1vsnear_b2_p2, 'Part 1 vs 2, last block, Near'=near_b3_p1vsnear_b3_p2)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block', 'session')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
 
+#effect size
+part1and2MTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- part1and2MTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
 
-
-
-
+#basically, they were moving faster in part 2
 
