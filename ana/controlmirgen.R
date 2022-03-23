@@ -1536,19 +1536,19 @@ getGroupCtrlGenPL <- function(groups = c('far', 'mid', 'near')){
     }
     
     #outlier removal
-    for (trialno in dataoutput$trial){
-      #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-      ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-      #print(max(ndat, na.rm=T))
-      trialmu <- mean(ndat, na.rm = TRUE)
-      trialsigma <- sd(ndat, na.rm = TRUE)
-      #print(trialsigma)
-      trialclip <- abs(trialmu) + (trialsigma * 2)
-      
-      ndat[which(abs(ndat) > trialclip)] <- NA
-      
-      dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-    }
+    # for (trialno in dataoutput$trial){
+    #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+    #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+    #   #print(max(ndat, na.rm=T))
+    #   trialmu <- mean(ndat, na.rm = TRUE)
+    #   trialsigma <- sd(ndat, na.rm = TRUE)
+    #   #print(trialsigma)
+    #   trialclip <- abs(trialmu) + (trialsigma * 2)
+    #   
+    #   ndat[which(abs(ndat) > trialclip)] <- NA
+    #   
+    #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+    # }
     
     #return(dataoutput)
     write.csv(dataoutput, file=sprintf('data/controlmirgenonline-master/data/processed/%s_PathLength.csv', group), row.names = F)
@@ -3590,4 +3590,117 @@ part1and2MTComparisonsEffSize <- function(method = 'bonferroni'){
 }
 
 #basically, they were moving faster in part 2
+# we can also include comparisons of last block in part 1 with first block in part 2
+retentionMTComparisonMeans <- function(){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC_part1 <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='trained') 
+  LC_part1 <- LC_part1[,-5]
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_part2 <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_part2) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","session"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block', 'session'))
+  print(cellmeans)
+  
+}
+
+retentionMTComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC_part1 <- getAlignedBlockedMTAOV(blockdefs=blockdefs, hand='trained') 
+  LC_part1 <- LC_part1[,-5]
+  LC_part1$session <- as.factor('part1')
+  
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC_part2 <- getBlockedMTAOV(blockdefs=blockdefs, quadrant='1W') 
+  colnames(LC_part2) <- c('target', 'participant','block','movementtime','session')
+  
+  #but we only want to analyze participants with data in both
+  LC_part1 <- LC_part1[which(LC_part1$participant %in% LC_part2$participant),]
+  LC4aov <- rbind(LC_part1, LC_part2)  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","movementtime",LC4aov,within=c("target", "block","session"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  far_b1_p1vsfar_b1_p2 <- c(-1,0,0,0,0,0,0,0,0,
+                            1,0,0,0,0,0,0,0,0)
+  far_b2_p1vsfar_b2_p2 <- c(0,0,0,-1,0,0,0,0,0,
+                            0,0,0,1,0,0,0,0,0)
+  far_b3_p1vsfar_b3_p2 <- c(0,0,0,0,0,0,-1,0,0,
+                            0,0,0,0,0,0,1,0,0)
+  
+  mid_b1_p1vsmid_b1_p2 <- c(0,-1,0,0,0,0,0,0,0,
+                            0,1,0,0,0,0,0,0,0)
+  mid_b2_p1vsmid_b2_p2 <- c(0,0,0,0,-1,0,0,0,0,
+                            0,0,0,0,1,0,0,0,0)
+  mid_b3_p1vsmid_b3_p2 <- c(0,0,0,0,0,0,0,-1,0,
+                            0,0,0,0,0,0,0,1,0)
+  
+  near_b1_p1vsnear_b1_p2 <- c(0,0,-1,0,0,0,0,0,0,
+                              0,0,1,0,0,0,0,0,0)
+  near_b2_p1vsnear_b2_p2 <- c(0,0,0,0,0,-1,0,0,0,
+                              0,0,0,0,0,1,0,0,0)
+  near_b3_p1vsnear_b3_p2 <- c(0,0,0,0,0,0,0,0,-1,
+                              0,0,0,0,0,0,0,0,1)
+  
+  far_b3_p1vsfar_b1_p2 <- c(0,0,0,0,0,0,-1,0,0,
+                            1,0,0,0,0,0,0,0,0)
+  mid_b3_p1vsmid_b1_p2 <- c(0,0,0,0,0,0,0,-1,0,
+                            0,1,0,0,0,0,0,0,0)
+  near_b3_p1vsnear_b1_p2 <- c(0,0,0,0,0,0,0,0,-1,
+                            0,0,1,0,0,0,0,0,0)
+  
+  
+  contrastList <- list('Part 1 vs 2, first block, Far'=far_b1_p1vsfar_b1_p2, 'Part 1 vs 2, second block, Far'=far_b2_p1vsfar_b2_p2, 'Part 1 vs 2, last block, Far'=far_b3_p1vsfar_b3_p2,
+                       'Part 1 vs 2, first block, Mid'=mid_b1_p1vsmid_b1_p2, 'Part 1 vs 2, second block, Mid'=mid_b2_p1vsmid_b2_p2, 'Part 1 vs 2, last block, Mid'=mid_b3_p1vsmid_b3_p2,
+                       'Part 1 vs 2, first block, Near'=near_b1_p1vsnear_b1_p2, 'Part 1 vs 2, second block, Near'=near_b2_p1vsnear_b2_p2, 'Part 1 vs 2, last block, Near'=near_b3_p1vsnear_b3_p2,
+                       'Part 1 last block vs Part 2 first block, Far'=far_b3_p1vsfar_b1_p2, 'Part 1 last block vs Part 2 first block, Mid'=mid_b3_p1vsmid_b1_p2, 'Part 1 last block vs Part 2 first block, Near'=near_b3_p1vsnear_b1_p2)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block', 'session')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+retentionMTComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- retentionMTComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+# only near target shows a sig. diff. (which was lower in part 2 than part 1)
+# far and mid targets show no difference (retention)
+
+
+
+
+
+
+
+
+
+
+
+
 

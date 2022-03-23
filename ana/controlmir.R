@@ -1940,19 +1940,19 @@ getGroupCtrlPL <- function(groups = c('far', 'mid', 'near')){
     }
     
     #outlier removal
-    for (trialno in dataoutput$trial){
-      #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-      ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-      #print(max(ndat, na.rm=T))
-      trialmu <- mean(ndat, na.rm = TRUE)
-      trialsigma <- sd(ndat, na.rm = TRUE)
-      #print(trialsigma)
-      trialclip <- abs(trialmu) + (trialsigma * 2)
-      
-      ndat[which(abs(ndat) > trialclip)] <- NA
-      
-      dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-    }
+    # for (trialno in dataoutput$trial){
+    #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+    #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+    #   #print(max(ndat, na.rm=T))
+    #   trialmu <- mean(ndat, na.rm = TRUE)
+    #   trialsigma <- sd(ndat, na.rm = TRUE)
+    #   #print(trialsigma)
+    #   trialclip <- abs(trialmu) + (trialsigma * 2)
+    #   
+    #   ndat[which(abs(ndat) > trialclip)] <- NA
+    #   
+    #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+    # }
     
     #return(dataoutput)
     write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/processed/%s_PathLength.csv', group), row.names = F)
@@ -4690,3 +4690,593 @@ RAEMTTrainedTargetsANOVA <- function() {
 }
 
 #main effects of block and target, no interaction (both main effects already explained by previous analyses)
+
+
+# Statistics (Path Length)----
+getAlignedBlockedPLAOV <- function(groups = c('far', 'mid', 'near'), blockdefs, hand) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmironline-master/data/processed/%s_PathLength.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    pathlength <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        pathlength <- c(pathlength, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, pathlength)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$hand <- hand
+  return(LCaov)
+  
+}
+
+#check target by block within each aligned period for each hand
+alignedPLANOVA <- function(hands = c('trained', 'untrained')) {
+  for(hand in hands){
+    if(hand == 'trained'){
+      blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+    } else if(hand == 'untrained'){
+      blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+    }
+    
+    LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)                      
+    
+    #looking into interaction below:
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during aligned trials across targets and blocks, %s hand:\n', hand))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#main effect of target for trained hand
+trainedHandPLComparisonMeansTargetEffect <- function(hand='trained'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)   
+  
+  LC4aov <- aggregate(pathlength ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("target"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+trainedHandPLComparisonsTargetEffect <- function(hand='trained', method='bonferroni'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)   
+  
+  LC4aov <- aggregate(pathlength ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("target"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+trainedHandPLComparisonsEffSizeTargetEffect <- function(method = 'bonferroni'){
+  comparisons <- trainedHandPLComparisonsTargetEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#driven by mid vs near (near is almost straight ahead)
+
+# follow up: aligned of untrained hand, main effect of block
+untrainedHandPLComparisonMeansBlockEffect <- function(hand='untrained'){
+  blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)  
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+untrainedHandPLComparisonsBlockEffect <- function(hand='untrained', method='bonferroni'){
+  blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)  
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+untrainedHandPLComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- untrainedHandPLComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#driven by first vs last block, shorter PL's as baseline progressed with untrained hand
+
+#compare target and block across hands (3x3x2)
+getAlignedBlockedPLAOV2Hands <- function(handA, handB){
+  LC4aov <- c()
+  hands <- c(handA, handB)
+  for(hand in hands){
+    if(hand == 'trained'){
+      blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+    } else if(hand == 'untrained'){
+      blockdefs <- list('first'=c(46,3),'second'=c(49,3),'last'=c(64,3))
+    }
+    
+    data <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand=hand)
+    LC4aov <- rbind(LC4aov, data)
+  }
+  
+  #need to make some columns as factors for ANOVA
+  LC4aov$target <- as.factor(LC4aov$target)
+  LC4aov$block <- as.factor(LC4aov$block)
+  LC4aov$hand <- factor(LC4aov$hand, levels = c(hands[1], hands[2])) #keeps order consistent with others
+  return(LC4aov)
+}
+
+alignedPLANOVA2Hands <- function(handA='trained', handB='untrained') {
+  
+  LC4aov <- getAlignedBlockedPLAOV2Hands(handA=handA, handB=handB)                      
+  
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$hand, LC4aov$angdev)
+  #interaction.plot(LC4aov$block, LC4aov$hand, LC4aov$angdev)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(target, block, hand), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Comparing targets and blocks between %s and %s hands:\n', handA, handB))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#follow up on main effect of hand (although looking at the means show higher PL for untrained hand)
+PLComparisonMeansHandEffect <- function(handA='trained', handB='untrained'){
+  LC4aov <- getAlignedBlockedPLAOV2Hands(handA=handA, handB=handB) 
+  
+  LC4aov <- aggregate(pathlength ~ hand* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("hand"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('hand'))
+  print(cellmeans)
+  
+}
+
+PLComparisonsHandEffect <- function(handA='trained', handB='untrained', method='bonferroni'){
+  LC4aov <- getAlignedBlockedPLAOV2Hands(handA=handA, handB=handB) 
+  
+  LC4aov <- aggregate(pathlength ~ hand* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("hand"))
+  trained <- LC4aov[which(LC4aov$hand == 'trained'),]
+  untrained <- LC4aov[which(LC4aov$hand == 'untrained'),]
+  print(t.test(trained$pathlength, untrained$pathlength, alternative = 'less', paired=TRUE))
+  
+}
+
+
+#Mirror trials PL
+#3x3 anova (target x block)
+mirrorPLANOVA <- function() {
+  
+  #can still use alignedMT function as it has all trials
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  
+  
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')               
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(target, block), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  #cat(sprintf('Quadrant %s:\n', quadrant))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#follow up on significant interaction
+mirrorPLComparisonMeans <- function(){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("target", "block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'block'))
+  print(cellmeans)
+  
+}
+
+#we know from the plot that path length decreases across blocks, but interesting to see target differences within each block
+
+mirrorPLComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(67,3),'second'=c(70,3),'last'=c(142,15))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')  
+  
+  #LC4aov <- aggregate(percentcomp ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("target", "block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  #first block
+  farvsmid_b1 <- c(-1,1,0,0,0,0,0,0,0)
+  farvsnear_b1 <- c(-1,0,1,0,0,0,0,0,0)
+  midvsnear_b1 <- c(0,-1,1,0,0,0,0,0,0)
+  #second
+  farvsmid_b2 <- c(0,0,0,-1,1,0,0,0,0)
+  farvsnear_b2 <- c(0,0,0,-1,0,1,0,0,0)
+  midvsnear_b2 <- c(0,0,0,0,-1,1,0,0,0)
+  #last
+  farvsmid_b3 <- c(0,0,0,0,0,0,-1,1,0)
+  farvsnear_b3 <- c(0,0,0,0,0,0,-1,0,1)
+  midvsnear_b3 <- c(0,0,0,0,0,0,0,-1,1)
+  
+  contrastList <- list('1st block: Far vs. Mid'=farvsmid_b1, '1st block: Far vs. Near'=farvsnear_b1, '1st block: Mid vs. Near'=midvsnear_b1,
+                       '2nd block: Far vs. Mid'=farvsmid_b2, '2nd block: Far vs. Near'=farvsnear_b2, '2nd block: Mid vs. Near'=midvsnear_b2,
+                       'last block: Far vs. Mid'=farvsmid_b3, 'last block: Far vs. Near'=farvsnear_b3, 'last block: Mid vs. Near'=midvsnear_b3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+mirrorPLComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- mirrorPLComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+
+#Washout phase
+#check target by block within washout period
+RAEPLANOVA <- function() {
+  
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  
+  
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Path length during washout trials across targets and blocks, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#follow up on main effect of block
+RAEPLComparisonMeansTargetEffect <- function(){
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+RAEPLComparisonsTargetEffect <- function(){
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  LC4aov <- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  block1 <- LC4aov[which(LC4aov$block == 'first'),]
+  block2 <- LC4aov[which(LC4aov$block == 'second'),]
+  print(t.test(block1$pathlength, block2$pathlength, alternative = 'greater', paired=TRUE))
+  
+}
+
+#Compare washout PL with baseline PL for only trained targets
+getParticipantPLTrainedTargets <- function(filename){
+  
+  dat <- handleOnePLCtrlFile(filename = filename)
+  #dat$circ_rd <- as.circular(dat$reachdeviation_deg, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
+  
+  targetdist <- c()
+  
+  for (target in dat$targetangle_deg){
+    #group targets by how far each one is from mirror (far, mid, near)
+    if (target %in% c(5)){
+      dist <- 'far'
+      targetdist <- c(targetdist, dist)
+    } else if (target %in% c(45)){
+      dist <- 'mid'
+      targetdist <- c(targetdist, dist)
+    } else if (target %in% c(85)){
+      dist <- 'near'
+      targetdist <- c(targetdist, dist)
+    } else{
+      dist <- 'untrained'
+      targetdist <- c(targetdist, dist)
+    }
+  }
+  dat$targetdist <- targetdist
+  
+  return(dat)
+}
+
+getAlignedGroupPLTrainedTargets <- function(groups = c('far', 'mid', 'near')){
+  #group is either 'far', 'mid', 'near' in relation to mirror, but we only want the 5, 45, 85 targets
+  for(group in groups){
+    datafilenames <- list.files('data/controlmironline-master/data', pattern = '*.csv')
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      datafilename <- sprintf('data/controlmironline-master/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      adat <- getParticipantPLTrainedTargets(filename = datafilename)
+      adat <- adat[which(adat$taskno == 1),] #get only aligned data for both hands
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(adat$trialno))
+      #adat$trialno <- trial
+      for (triali in trial){
+        trialdat <- adat[which(adat$trialno == triali),]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetdist != group){
+          trialdat$path_length <- NA
+        }
+        adat[triali,] <- trialdat
+      }
+      ppreaches <- adat$path_length #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(adat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    
+    
+    #return(dataoutput)
+    write.csv(dataoutput, file=sprintf('data/controlmironline-master/data/statistics/%s_AlignedCtrl_PL_Q1target.csv', group), row.names = F)
+  }
+}
+
+#blockdefs <- list('baseline'=c(1,45)) we want the full aligned period given how each target appears 5 times per pp
+getAlignedBlockedPLTrainedTargets <- function(groups = c('far', 'mid', 'near'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/controlmironline-master/data/statistics/%s_AlignedCtrl_PL_Q1target.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    pathlength <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        pathlength <- c(pathlength, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, pathlength)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('baseline'))
+  return(LCaov)
+  
+}
+
+RAEPLTrainedTargetsANOVA <- function() {
+  
+  blockdefs <- list('baseline'=c(1,45))
+  LC_aligned <- getAlignedBlockedPLTrainedTargets(blockdefs=blockdefs)
+  
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  LC_washout<- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')
+  LC_washout <- LC_washout[,-5]
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('baseline', 'first', 'second'))
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing path length during washout trials with aligned trials across targets and blocks, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#follow up on main effect of block
+RAEPLTrainedTargetsComparisonMeans <- function(){
+  blockdefs <- list('baseline'=c(1,45))
+  LC_aligned <- getAlignedBlockedPLTrainedTargets(blockdefs=blockdefs)
+  
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  LC_washout<- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')
+  LC_washout <- LC_washout[,-5]
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('baseline', 'first', 'second'))
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within="block")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+RAEPLTrainedTargetsComparisons <- function(method='bonferroni'){
+  blockdefs <- list('baseline'=c(1,45))
+  LC_aligned <- getAlignedBlockedPLTrainedTargets(blockdefs=blockdefs)
+  
+  blockdefs <- list('first'=c(157,3),'second'=c(160,3))
+  LC_washout<- getAlignedBlockedPLAOV(blockdefs=blockdefs, hand='trained')
+  LC_washout <- LC_washout[,-5]
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('baseline', 'first', 'second'))
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within="block")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  baselinevsfirst <- c(-1,1,0)
+  baselinevssecond <- c(-1,0,1)
+  firstvssecond<- c(0,-1,1)
+  
+  contrastList <- list('Aligned vs. Washout_b1'=baselinevsfirst, 'Aligned vs. Washout_b2'=baselinevssecond, 'Washout_b1 vs. Washout_b2'=firstvssecond)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+RAEPLTrainedTargetsComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- RAEPLTrainedTargetsComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#driven by block 1 of washout being higher than block 2 and baseline
