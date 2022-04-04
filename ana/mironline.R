@@ -11,13 +11,65 @@ source('ana/controlmirgen.R')
 
 #Aligned-----
 #Note that baseline reaches here have been cleaned (i.e. had to reach in correct quadrant), such that participants reaching all over the workspace were removed
-#as this was taken as evidence that they did not do the task correctly.
+#as this was taken as evidence that they did not do the task correctly. Mirror trials baseline correction are based off of this cleaned data.
 # This step is omitted in control studies as the targets used are closer to the edge of each quadrant.
+
+#However, this would mean that there are NA values in the aligned trials. Here we will plot the uncorrected values for baseline only and its corresponding statistics.
+
+getGroupAlignedMirOnline <- function(groups = c('30','60'), set='fa2020'){
+  
+  for(group in groups){
+    datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
+    
+    
+    
+    dataoutput<- data.frame() #create place holder
+    for(datafilenum in c(1:length(datafilenames))){
+      datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
+      
+      
+      #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      adat <- getParticipantCircularAligned(filename = datafilename)
+      # per target location, get reachdev for corresponding trials
+      
+      trial <- c(1:length(adat$trialno))
+      adat$trialno <- trial
+      for (triali in trial){
+        trialdat <- adat[which(adat$trialno == triali),]
+        #set reachdev to NA if not the target location we want
+        if (trialdat$targetangle_deg != group){
+          trialdat$circ_rd <- NA
+        }
+        adat[triali,] <- trialdat
+      }
+      ppreaches <- adat$circ_rd #get reach deviations column from learning curve data
+      ppdat <- data.frame(trial, ppreaches)
+      
+      ppname <- unique(adat$participant)
+      names(ppdat)[names(ppdat) == 'ppreaches'] <- ppname
+      
+      if (prod(dim(dataoutput)) == 0){
+        dataoutput <- ppdat
+      } else {
+        dataoutput <- cbind(dataoutput, ppreaches)
+        names(dataoutput)[names(dataoutput) == 'ppreaches'] <- ppname
+      }
+    }
+    
+    write.csv(dataoutput, file=sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv', group), row.names = F)
+    
+    
+    #Note: multiple files have no step 2 or have many trials without step 2
+    #These participant files have been removed
+    #check for any more NA values:
+    #names(which(colSums(is.na(dataoutput))>0))
+  }
+}
 
 getGroupAlignedMirOnlineCI <- function(groups = c('30', '60')){
   
   for(group in groups){
-    data <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
+    data <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE) #check.names allows us to keep pp id as headers
     
     trialno <- data$trial
     
@@ -252,7 +304,7 @@ plotMirOnlineAllTasks <- function(groups = c('30', '60'), target='inline') {
   
   #but we can save plot as svg file
   if (target=='svg'){
-    svglite(file='data/mironline-master4/doc/fig/Fig1_MirOnlineAllTasks.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/mironline-master/doc/fig/Fig1_MirOnlineAllTasks.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
   # create plot
@@ -511,3 +563,74 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
   }
   
 }
+
+
+#Statistics (Learning)----
+getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    angdev <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        angdev <- c(angdev, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, angdev)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  return(LCaov)
+  
+}
+
+#check target by block within each aligned period for each hand
+alignedMirOnlineANOVA <- function() {
+
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+
+    
+    
+    LC4aov <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    
+    #looking into interaction below:
+    interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during aligned trials across targets and blocks: \n'))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+}
+
+#note that 30 and 60 are in opposite signs as to what is plotted. Plot calculates mean and CI's based on the function we wrote
+#Stats test here uses the raw values for aligned. This will not matter for mirror data, since we are looking into percentages there.
+#target effect, as we see in plot. No interaction, no block effect
