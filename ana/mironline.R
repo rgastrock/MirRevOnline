@@ -389,10 +389,8 @@ plotMirOnlineAllTasks <- function(groups = c('30', '60'), target='inline') {
 getPercentagesMirOnline <- function(groups = c('30', '60')){
   
   for(group in groups){
-    data_AL <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
-    data_MIR <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
-    data_RAE <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv', group), check.names = FALSE)
-    data <- rbind(data_AL,data_MIR,data_RAE)
+    
+    data <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_CircularLC.csv', group), check.names = FALSE)
     data$trial <- seq(1,length(data$trial),1)
     
     trialno <- data$trial
@@ -474,7 +472,7 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
   mtext('b', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(0, 100), col = 8, lty = 2)
   
-  blockdefs <- list(c(21,3))
+  blockdefs <- list(c(1,3))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
   groupno <- 0
   
@@ -505,7 +503,7 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
   mtext('c', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(0, 100), col = 8, lty = 2)
   
-  blockdefs <- list(c(24,3))
+  blockdefs <- list(c(4,3))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
   groupno <- 0
   
@@ -535,7 +533,7 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
   mtext('d', side=3, outer=FALSE, line=-1, adj=0, padj=1, font=2)
   abline(h = c(0, 100), col = 8, lty = 2)
   
-  blockdefs <- list(c(96,15))
+  blockdefs <- list(c(76,15))
   #blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
   groupno <- 0
   
@@ -566,6 +564,7 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
 
 
 #Statistics (Learning)----
+#Aligned trials
 getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
   
   LCaov <- data.frame()
@@ -634,3 +633,190 @@ alignedMirOnlineANOVA <- function() {
 #note that 30 and 60 are in opposite signs as to what is plotted. Plot calculates mean and CI's based on the function we wrote
 #Stats test here uses the raw values for aligned. This will not matter for mirror data, since we are looking into percentages there.
 #target effect, as we see in plot. No interaction, no block effect
+
+#Mirror trials
+getMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/mironline-master/data/statistics/%s_PercentCompensation.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    percentcomp <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every three trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        percentcomp <- c(percentcomp, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, percentcomp)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  return(LCaov)
+  
+}
+
+mirOnlineANOVA <- function() {
+  
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  
+  
+  LC4aov <- getMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                  
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$percentcomp)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(target, block), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  #cat(sprintf('Quadrant %s:\n', quadrant))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#interaction not significant after GG, but there is a target and block effect
+#target shows more compensation for 60, as seen in plots
+#block can be investigated
+MirOnlineComparisonMeans <- function(){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getMirrorBlockedMirOnlineAOV(blockdefs=blockdefs) 
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+MirOnlineComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getMirrorBlockedMirOnlineAOV(blockdefs=blockdefs) 
+  
+  LC4aov <- aggregate(percentcomp ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","percentcomp",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  B1vsB2 <- c(-1,1,0)
+  B1vsB3 <- c(-1,0,1)
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('First vs second block'=B1vsB2, 'First vs last block'=B1vsB3, 'Second vs last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- MirOnlineComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#first block lowest, higher second block, then dips for last block
+
+#Washout
+getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    #use the one from su&fa2020, since unlike baseline, this required no cleaning (but biases use for correction are from cleaned data)
+    curves <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    angdev <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        angdev <- c(angdev, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, angdev)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second'))
+  return(LCaov)
+  
+}
+
+RAEMirOnlineANOVA <- function() {
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3))
+  
+  
+  
+  LC4aov <- getRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Angular reach deviations during washout trials across targets and blocks: \n'))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+}
