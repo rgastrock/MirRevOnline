@@ -566,11 +566,13 @@ plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
 #Statistics (Learning)----
 #Aligned trials
 getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
-  
+  #when analyzing angular deviations, we'd need to transform into circular values, so that stats are closer to what we need
+  #circular values are similar to the way we calculate CI's in plots, raw ang devs will distort means
   LCaov <- data.frame()
   for(group in groups){
     curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -599,6 +601,7 @@ getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -630,8 +633,6 @@ alignedMirOnlineANOVA <- function() {
     print(firstAOV[1:3]) #so that it doesn't print the aov object as well
 }
 
-#note that 30 and 60 are in opposite signs as to what is plotted. Plot calculates mean and CI's based on the function we wrote
-#Stats test here uses the raw values for aligned. This will not matter for mirror data, since we are looking into percentages there.
 #target effect, as we see in plot. No interaction, no block effect
 
 #Mirror trials
@@ -763,6 +764,7 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
     #use the one from su&fa2020, since unlike baseline, this required no cleaning (but biases use for correction are from cleaned data)
     curves <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -791,20 +793,21 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
   #need to make some columns as factors for ANOVA
   LCaov$target <- as.factor(LCaov$target)
   LCaov$block <- as.factor(LCaov$block)
-  LCaov$block <- factor(LCaov$block, levels = c('first','second'))
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
   return(LCaov)
   
 }
 
 RAEMirOnlineANOVA <- function() {
   
-  blockdefs <- list('first'=c(1,3),'second'=c(4,3))
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
   
   
   
@@ -820,3 +823,103 @@ RAEMirOnlineANOVA <- function() {
   cat(sprintf('Angular reach deviations during washout trials across targets and blocks: \n'))
   print(firstAOV[1:3]) #so that it doesn't print the aov object as well
 }
+
+#target effect, 30 degrees is generally lower, but no block effect nor interaction
+
+#compare with baseline
+RAEBaselineANOVA <- function() {
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC_washout <- getRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))
+  #looking into interaction below:
+  #interaction.plot(LC4aov$target, LC4aov$block, LC4aov$angdev)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing angular reach deviations during washout trials with aligned trials across targets and blocks, trained hand:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+#no effect of session, but a session by target interaction
+RAEBaselineComparisonMeans <- function(){
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC_washout <- getRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))
+  
+  LC4aov <- aggregate(angdev ~ target* session* participant, data=LC4aov, FUN=mean) #regardless of target, the mean for every block within each quadrant
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("target", "session"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target', 'session'))
+  print(cellmeans)
+  
+}
+
+RAEBaselineComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC_washout <- getRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))
+  
+  LC4aov <- aggregate(angdev ~ target* session* participant, data=LC4aov, FUN=mean) #regardless of target, the mean for every block within each quadrant
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("target", "session"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  baseline30vswashout30 <- c(-1,0,1,0)
+  baseline60vswashout60  <- c(0,-1,0,1)
+  
+  contrastList <- list('Baseline_30 vs. Washout_30'=baseline30vswashout30, 'Baseline_60 vs. Washout_60'=baseline60vswashout60)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target', 'session')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+RAEBaselineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- RAEBaselineComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+
+
+#Statistics (Movement Time)----

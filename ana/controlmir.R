@@ -3549,6 +3549,7 @@ getAlignedBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
   for(group in groups){
     curves <- read.csv(sprintf('data/controlmironline-master/data/processed/%s_AlignedCtrl.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -3577,6 +3578,7 @@ getAlignedBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -3612,6 +3614,60 @@ alignedLearningANOVA <- function(hands = c('trained', 'untrained')) {
   }
 }
 
+#target effect for trained hand, but no block effect nor interaction
+#follow up on main effect of target
+alignedTrainedComparisonMeans <- function(hand='trained'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand)  
+  
+  LC4aov <- aggregate(angdev ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="target")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+alignedTrainedComparisons <- function(qhand='trained', method='bonferroni'){
+  blockdefs <- list('first'=c(1,9),'second'=c(10,9),'last'=c(37,9))
+  LC4aov <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand=hand)  
+  
+  LC4aov <- aggregate(angdev ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="target")
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  farvsmid <- c(-1,1,0)
+  farvsnear <- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+alignedTrainedComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- alignedTrainedComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+
 #compare target and block across hands (3x3x2)
 getAlignedBlockedLearningAOV2Hands <- function(handA, handB){
   LC4aov <- c()
@@ -3639,8 +3695,8 @@ alignedLearningANOVA2Hands <- function(handA='trained', handB='untrained') {
   LC4aov <- getAlignedBlockedLearningAOV2Hands(handA=handA, handB=handB)                      
   
   #looking into interaction below:
-  #interaction.plot(LC4aov$target, LC4aov$hand, LC4aov$angdev)
-  #interaction.plot(LC4aov$block, LC4aov$hand, LC4aov$angdev)
+  interaction.plot(LC4aov$target, LC4aov$hand, LC4aov$angdev)
+  interaction.plot(LC4aov$block, LC4aov$hand, LC4aov$angdev)
   
   #learning curve ANOVA's
   # for ez, case ID should be a factor:
@@ -3827,6 +3883,7 @@ getRAEBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs
   for(group in groups){
     curves <- read.csv(sprintf('data/controlmironline-master/data/processed/%s_RAECtrl.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -3855,6 +3912,7 @@ getRAEBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), blockdefs
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -3968,6 +4026,7 @@ getAlignedBlockedTrainedTargets <- function(groups = c('far', 'mid', 'near'), bl
   for(group in groups){
     curves <- read.csv(sprintf('data/controlmironline-master/data/statistics/%s_AlignedCtrl_Q1target.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -3996,6 +4055,7 @@ getAlignedBlockedTrainedTargets <- function(groups = c('far', 'mid', 'near'), bl
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }

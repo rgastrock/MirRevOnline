@@ -2202,6 +2202,7 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
   for(group in groups){
     curves <- read.csv(sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
+    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -2230,6 +2231,7 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
         angdev <- c(angdev, samples)
       }
     }
+    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -2300,6 +2302,58 @@ washoutComparisons <- function(quadrant='1W', method='bonferroni'){
 #effect size
 washoutComparisonsEffSize <- function(method = 'bonferroni'){
   comparisons <- washoutComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#follow up on washout (main effect of target)
+washoutTargetEffectComparisonMeans <- function(quadrant='1W'){
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC4aov <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)
+  
+  LC4aov <- aggregate(angdev ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="target")
+  
+  cellmeans <- emmeans(secondAOV,specs=c('target'))
+  print(cellmeans)
+  
+}
+
+washoutTargetEffectComparisons <- function(quadrant='1W', method='bonferroni'){
+  blockdefs <- list('first'=c(106,3),'second'=c(109,3),'last'=c(124,3))
+  LC4aov <- getWashoutBlockedLearningAOV(blockdefs=blockdefs, quadrant=quadrant)
+  
+  LC4aov <- aggregate(angdev ~ target* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within="target")
+  
+  #specify contrasts
+  #levels of target are: Q1w_1, Q1W_2, Q1W_3
+  farvsmid <- c(-1,1,0)
+  farvsnear<- c(-1,0,1)
+  midvsnear <- c(0,-1,1)
+  
+  contrastList <- list('Far vs. Mid'=farvsmid, 'Far vs. Near'=farvsnear, 'Mid vs. Near'=midvsnear)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('target')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+washoutTargetEffectComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- washoutTargetEffectComparisons(method=method)
   #we can use eta-squared as effect size
   #% of variance in DV(percentcomp) accounted for 
   #by the difference between target1 and target2
@@ -2438,8 +2492,9 @@ Q1Land1WComparisons <- function(quadrantA='1L', quadrantB='1W', method='bonferro
   first1Lvsfirst1W <- c(-1,0,0,1,0,0)
   second1Lvssecond1W <- c(0,-1,0,0,1,0)
   last1Lvslast1W <- c(0,0,-1,0,0,1)
+  last1Lvsfirst1W <- c(0,0,-1,1,0,0)
   
-  contrastList <- list('Untrained_B1 vs. Washout_B1'=first1Lvsfirst1W, 'Untrained_B2 vs. Washout_B2'=second1Lvssecond1W, 'Untrained_B3 vs. Washout_B3'=last1Lvslast1W)
+  contrastList <- list('Untrained_B1 vs. Washout_B1'=first1Lvsfirst1W, 'Untrained_B2 vs. Washout_B2'=second1Lvssecond1W, 'Untrained_B3 vs. Washout_B3'=last1Lvslast1W, 'Untrained_B3 vs. Washout_B1'=last1Lvsfirst1W)
   
   comparisons<- contrast(emmeans(secondAOV,specs=c('block', 'quadrant')), contrastList, adjust=method)
   
