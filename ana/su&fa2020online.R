@@ -2483,7 +2483,7 @@ getGroupAllTasksMT <- function(group, set, step){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     alldat <- handleOneMTFile(filename = datafilename, step = step)
     # per target location, get reachdev for corresponding trials
     
@@ -2511,19 +2511,19 @@ getGroupAllTasksMT <- function(group, set, step){
     }
   }
   
-  for (trialno in dataoutput$trial){
-    #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-    ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-    #print(max(ndat, na.rm=T))
-    trialmu <- mean(ndat, na.rm = TRUE)
-    trialsigma <- sd(ndat, na.rm = TRUE)
-    #print(trialsigma)
-    trialclip <- abs(trialmu) + (trialsigma * 2)
-
-    ndat[which(abs(ndat) > trialclip)] <- NA
-
-    dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-  }
+  # for (trialno in dataoutput$trial){
+  #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+  #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+  #   #print(max(ndat, na.rm=T))
+  #   trialmu <- mean(ndat, na.rm = TRUE)
+  #   trialsigma <- sd(ndat, na.rm = TRUE)
+  #   #print(trialsigma)
+  #   trialclip <- abs(trialmu) + (trialsigma * 2)
+  # 
+  #   ndat[which(abs(ndat) > trialclip)] <- NA
+  # 
+  #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+  # }
   
   #return(dataoutput)
   if (set == 'su2020'){
@@ -3555,7 +3555,7 @@ getGroupAllTasksPathLength <- function(group, set, step){
     } else if (set == 'fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
     }
-    #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+    cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
     alldat <- handleOneFilePathLength(filename = datafilename, step = step)
     # per target location, get reachdev for corresponding trials
     
@@ -3583,19 +3583,19 @@ getGroupAllTasksPathLength <- function(group, set, step){
     }
   }
   
-  for (trialno in dataoutput$trial){
-    #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
-    ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
-    #print(max(ndat, na.rm=T))
-    trialmu <- mean(ndat, na.rm = TRUE)
-    trialsigma <- sd(ndat, na.rm = TRUE)
-    #print(trialsigma)
-    trialclip <- abs(trialmu) + (trialsigma * 2)
-
-    ndat[which(abs(ndat) > trialclip)] <- NA
-
-    dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
-  }
+  # for (trialno in dataoutput$trial){
+  #   #go through each trial, get reaches, calculate mean and sd, then if it is greater than 2 sd, replace with NA
+  #   ndat <- as.numeric(dataoutput[trialno, 2:ncol(dataoutput)])
+  #   #print(max(ndat, na.rm=T))
+  #   trialmu <- mean(ndat, na.rm = TRUE)
+  #   trialsigma <- sd(ndat, na.rm = TRUE)
+  #   #print(trialsigma)
+  #   trialclip <- abs(trialmu) + (trialsigma * 2)
+  # 
+  #   ndat[which(abs(ndat) > trialclip)] <- NA
+  # 
+  #   dataoutput[trialno, 2:ncol(dataoutput)] <- ndat
+  # }
   
   #return(dataoutput)
   if (set == 'su2020'){
