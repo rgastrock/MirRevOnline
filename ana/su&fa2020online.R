@@ -3670,13 +3670,13 @@ plotAllTasksPathLength <- function(groups = c('30', '60'), target='inline', set)
     
     #NA to create empty plot
     # could maybe use plot.new() ?
-    plot(NA, NA, xlim = c(0,131), ylim = c(-3,15), 
+    plot(NA, NA, xlim = c(0,131), ylim = c(-1,6), 
          xlab = "Trial", ylab = "Path Length (monitor scale)", frame.plot = FALSE, #frame.plot takes away borders
          main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
-    abline(h = c(0), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(h = c(0.4), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
     abline(v= c(20, 110), col = 8, lty = 2)
     axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
-    axis(2, at = c(0, 2, 4, 6, 8, 10)) #tick marks for y axis
+    axis(2, at = c(0, 1, 2, 3, 4, 5)) #tick marks for y axis
     
     for(group in groups){
       #read in files created by getGroupConfidenceInterval in filehandling.R

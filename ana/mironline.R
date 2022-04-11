@@ -981,7 +981,7 @@ alignedMTMirOnlineANOVA <- function() {
   # for ez, case ID should be a factor:
   LC4aov$participant <- as.factor(LC4aov$participant)
   firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
-  cat(sprintf('Movement time during aligned trials across targets and blocks, %s hand:\n', hand))
+  cat(sprintf('Movement time during aligned trials across targets and blocks:\n'))
   print(firstAOV[1:3]) #so that it doesn't print the aov object as well
   
 }
@@ -1194,7 +1194,7 @@ RAEMTMirOnlineComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
 
 
 #compare with baseline
-RAEBaselineMirOnlineANOVA <- function() {
+RAEBaselineMTMirOnlineANOVA <- function() {
   
   blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
   LC_aligned <- getAlignedBlockedMTMirOnlineAOV(blockdefs=blockdefs)
@@ -1224,3 +1224,320 @@ RAEBaselineMirOnlineANOVA <- function() {
 #main interest is session effect, and we see in plot that washout has lower MTs
 
 #Statistics (Path Length)----
+getAlignedBlockedPLMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    curves <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_step2_PathLength.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+    curves <- curves[,-1] #remove trial rows
+    participants <- colnames(curves)
+    N <- length(participants)
+    
+    #blocked <- array(NA, dim=c(N,length(blockdefs)))
+    
+    target <- c()
+    participant <- c()
+    block <- c()
+    pathlength <- c()
+    
+    for (ppno in c(1:N)) {
+      
+      pp <- participants[ppno]
+      
+      for (blockno in c(1:length(blockdefs))) {
+        #for each participant, and every 9 trials, get the mean
+        blockdef <- blockdefs[[blockno]]
+        blockstart <- blockdef[1]
+        blockend <- blockstart + blockdef[2] - 1
+        samples <- curves[blockstart:blockend,ppno]
+        samples <- mean(samples, na.rm=TRUE)
+        
+        target <- c(target, group)
+        participant <- c(participant, pp)
+        block <- c(block, names(blockdefs)[blockno])
+        pathlength <- c(pathlength, samples)
+      }
+    }
+    LCBlocked <- data.frame(target, participant, block, pathlength)
+    LCaov <- rbind(LCaov, LCBlocked)
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  return(LCaov)
+  
+}
+
+#check target by block within each aligned period for each hand
+alignedPLMirOnlineANOVA <- function() {
+  
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)                      
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat(sprintf('Path length during aligned trials across targets and blocks:\n'))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#no effects
+
+#mirror trials PL
+mirrorPLMirOnlineANOVA <- function() {
+  
+  #can still use alignedMT function as it has all trials
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  
+  
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)               
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(target, block), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  #cat(sprintf('Quadrant %s:\n', quadrant))
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#main effects only (target we see in interaction plot that it is higher for 60 degree)
+#block follow up
+mirrorPLMirOnlineComparisonMeansBlockEffect <- function(){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+mirrorPLMirOnlineComparisonsBlockEffect <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+mirrorPLMirOnlineComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- mirrorPLMirOnlineComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#each block different from each other
+
+#Washout phase
+#check target by block within washout period
+RAEPLMirOnlineANOVA <- function() {
+  
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)                   
+  
+  #looking into interaction below:
+  interaction.plot(LC4aov$target, LC4aov$block, LC4aov$pathlength)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Path length during washout trials across targets and blocks: \n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#block effect
+RAEPLMirOnlineComparisonMeansBlockEffect <- function(){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+RAEPLMirOnlineComparisonsBlockEffect <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)   
+  
+  LC4aov <- aggregate(pathlength ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  b1vsb2 <- c(-1,1,0)
+  b1vsb3 <- c(-1,0,1)
+  b2vsb3 <- c(0,-1,1)
+  
+  contrastList <- list('first vs. second block'=b1vsb2, 'first vs. last block'=b1vsb3, 'second vs. last block'=b2vsb3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+RAEPLMirOnlineComparisonsEffSizeBlockEffect <- function(method = 'bonferroni'){
+  comparisons <- RAEPLMirOnlineComparisonsBlockEffect(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#first block differs from second and last block
+
+#compare with baseline
+RAEBaselinePLMirOnlineANOVA <- function() {
+  
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC_washout <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))
+  #looking into interaction below:
+  #interaction.plot(LC4aov$block, LC4aov$session, LC4aov$movementtime)
+  
+  #learning curve ANOVA's
+  # for ez, case ID should be a factor:
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block, target, session), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+  cat('Comparing path length during washout trials with aligned trials across targets and blocks:\n')
+  print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  
+}
+
+#main effects of block and session, interaction of block and session
+RAEBaselinePLMirOnlineComparisonMeans <- function(){
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC_washout <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))  
+  
+  LC4aov <- aggregate(pathlength ~ block* session* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block", "session"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block', 'session'))
+  print(cellmeans)
+  
+}
+
+#we know from the plot that movement time decreases across blocks, but interesting to see target differences within each block
+
+RAEBaselinePLMirOnlineComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  blockdefs <- list('first'=c(1,3), 'second'=c(4,3),'last'=c(18,3))
+  LC_aligned <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)
+  LC_aligned$session <- 'baseline'
+  
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC_washout <- getAlignedBlockedPLMirOnlineAOV(blockdefs=blockdefs)                      
+  LC_washout$session <- 'washout'
+  
+  LC4aov <- rbind(LC_aligned, LC_washout)
+  LC4aov$block <- factor(LC4aov$block, levels = c('first', 'second', 'last'))
+  LC4aov$session <- factor(LC4aov$session, levels = c('baseline', 'washout'))  
+  
+  LC4aov <- aggregate(pathlength ~ block* session* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","pathlength",LC4aov,within=c("block", "session"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1_basevswash <- c(-1,0,0,1,0,0)
+  #second
+  B2_basevswash <- c(0,-1,0,0,1,0)
+  #last
+  B3_basevswash <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('1st block: baseline vs. washout'=B1_basevswash, '2nd block: baseline vs. washout'=B2_basevswash, 'last block: baseline vs. washout'=B3_basevswash)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block', 'session')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+RAEBaselinePLMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- RAEBaselinePLMirOnlineComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#baseline and washout differ between 1st and 2nd block
