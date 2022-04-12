@@ -2202,7 +2202,6 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
   for(group in groups){
     curves <- read.csv(sprintf('data/controlmirgenonline-master/data/processed/%s_MirCtrlGen.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
-    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -2223,7 +2222,8 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- mean(samples, na.rm=TRUE)
+        samples <- getAngularReachDevsCI(data=samples, group=group)
+        samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -2231,7 +2231,6 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
         angdev <- c(angdev, samples)
       }
     }
-    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -2546,7 +2545,7 @@ RAEUntrainedHandANOVA <- function() {
   
 }
 
-#main effect of block and a block by session interaction: look at interaction
+#main effect of target and a block by session interaction: look at interaction
 untrainedHandSessionComparisonMeans <- function(){
   blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
   LC_aligned <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand='untrained')
@@ -2625,7 +2624,7 @@ untrainedHandSessionComparisonsEffSize <- function(method = 'bonferroni'){
   print(effectsize)
 }
 
-#effect accounted for by difference between last block of baseline with 1st block of washout
+#no significant effects, but probably due to high first block in washout
 
 #test for retention (difference between last block in part 1 and first block in part 2?)
 retentionANOVA <- function() {

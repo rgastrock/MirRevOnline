@@ -572,7 +572,6 @@ getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
   for(group in groups){
     curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
-    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -593,7 +592,8 @@ getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- mean(samples, na.rm=TRUE)
+        samples <- getAngularReachDevsCI(data=samples, group=group)
+        samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -601,7 +601,6 @@ getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         angdev <- c(angdev, samples)
       }
     }
-    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -633,7 +632,58 @@ alignedMirOnlineANOVA <- function() {
     print(firstAOV[1:3]) #so that it doesn't print the aov object as well
 }
 
-#target effect, as we see in plot. No interaction, no block effect
+#target effect, as we see in plot. Block effect, no interaction
+alignedMirOnlineBlockComparisonMeans <- function(){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs) 
+  
+  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+alignedMirOnlineBlockComparisons <- function(method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs) 
+  
+  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: far, mid, near
+  B1vsB2 <- c(-1,1,0)
+  B1vsB3 <- c(-1,0,1)
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('First vs second block'=B1vsB2, 'First vs last block'=B1vsB3, 'Second vs last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+alignedMirOnlineBlockComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- alignedMirOnlineBlockComparisons(method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
 
 #Mirror trials
 getMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
@@ -764,7 +814,6 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
     #use the one from su&fa2020, since unlike baseline, this required no cleaning (but biases use for correction are from cleaned data)
     curves <- read.csv(sprintf('data/mirrorreversal-fall/data/processed/%s_CircularRAE.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
     curves <- curves[,-1] #remove trial rows
-    curves <- as.circular(curves, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     participants <- colnames(curves)
     N <- length(participants)
     
@@ -785,7 +834,8 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- mean(samples, na.rm=TRUE)
+        samples <- getAngularReachDevsCI(data=samples, group=group)
+        samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -793,7 +843,6 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         angdev <- c(angdev, samples)
       }
     }
-    angdev <- as.circular(angdev, type='angles', units='degrees', template = 'none', modulo = 'asis', zero = 0, rotation = 'counter')
     LCBlocked <- data.frame(target, participant, block, angdev)
     LCaov <- rbind(LCaov, LCBlocked)
   }
@@ -919,7 +968,7 @@ RAEBaselineComparisonsEffSize <- function(method = 'bonferroni'){
   #print(comparisons)
   print(effectsize)
 }
-
+#driven by a difference in 60 target between baseline and washout
 
 
 #Statistics (Movement Time)----
@@ -1541,3 +1590,384 @@ RAEBaselinePLMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
 }
 
 #baseline and washout differ between 1st and 2nd block
+
+#Device (Mouse vs. Trackpad): Plots ----
+getDeviceMirOnlineConfInt <- function(groups = c('30','60'), set='fa2020', device){
+  for(group in groups){
+    data <- getDeviceLC(group=group, set=set, device=device) #this is in qualtricsdata.R
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceLC_CI.csv', group, device), row.names = F)
+    }
+  }
+}
+
+#use no baseline cleaning data for baseline
+getDeviceAlignedMirOnline <- function(group, device){
+  
+  qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  #then get pplist according to device
+  devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+  ppqualt <- devqualt$id
+  dat <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+  
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
+  
+  #keep only data of pp from this list
+  trial <- dat$trial
+  ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+  dat <- cbind(trial, ndat)
+  
+  return(dat)
+}
+
+getDeviceAlignedMirOnlineConfInt <- function(groups = c('30','60'), device){
+  for(group in groups){
+    data <- getDeviceAlignedMirOnline(group=group, device=device)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceAligned_CI.csv', group, device), row.names = F)
+    }
+  }
+}
+
+getDeviceRAEMirOnlineConfInt <- function(groups = c('30','60'), set='fa2020', device){
+  for(group in groups){
+    data <- getDeviceRAE(group=group, set=set, device=device) #found in qualtricsdata.R
+    
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceRAE_CI.csv', group, device), row.names = F)
+    }
+  }
+}
+
+plotDeviceMirOnline <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig2_%s_DeviceAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-20,140), 
+         xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(-15, 0, 15, 30, 60, 90, 120)) #tick marks for y axis
+    
+    for(device in devices){
+      #read in files created by getGroupConfidenceInterval in filehandling.R
+      groupconfidenceAligned <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceAligned_CI.csv', group, device))
+      groupconfidenceLC <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceLC_CI.csv', group, device))
+      groupconfidenceRAE <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_DeviceRAE_CI.csv', group, device))
+      
+      
+      
+      colourscheme <- getDeviceColourScheme(devices = device)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0,legend=c('Mouse','Trackpad'),
+           col=c(colourscheme[['Mouse']][['S']],colourscheme[['Trackpad']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+#Device (Mouse vs Trackpad): Statistics ----
+# we care about differences in device for each target location. We can run tests in each target, as seen in plots.
+# To do this, we don't need to convert to % of compensation.
+getDeviceAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(devicetype in devices){
+      curves <- getDeviceAlignedMirOnline(group=group, device=devicetype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      angdev <- c()
+      device <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- getAngularReachDevsCI(data=samples, group=group)
+          samples <- samples[[2]]
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          angdev <- c(angdev, samples)
+          device <- c(device, devicetype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, angdev, device)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$device <- as.factor(LCaov$device)
+  return(LCaov)
+  
+}
+
+deviceAlignedMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getDeviceAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during aligned trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#no effects for 30 degree target
+# follow up: device by block interaction for 60 degree target
+deviceAligned60MirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="angdev",LC4aov,within=c("block"),between=c("device"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','device'))
+  print(cellmeans)
+  
+}
+
+#we know from the plot that movement time decreases across blocks, but interesting to see target differences within each block
+
+deviceAligned60MirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="angdev",LC4aov,within=c("block"),between=c("device"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1_MvsT <- c(-1,0,0,1,0,0)
+  #second
+  B2_MvsT <- c(0,-1,0,0,1,0)
+  #last
+  B3_MvsT <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('1st block: Mouse vs. Trackpad'=B1_MvsT, '2nd block: Mouse vs. Trackpad'=B2_MvsT, 'last block: Mouse vs. Trackpad'=B3_MvsT)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block', 'device')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceAligned60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceAligned60MirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#driven by difference between devices in block 1
+
+getDeviceMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(devicetype in devices){
+      curves <- getDeviceLC(group=group, set='fa2020', device=devicetype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      angdev <- c()
+      device <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- getAngularReachDevsCI(data=samples, group=group)
+          samples <- samples[[2]]
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          angdev <- c(angdev, samples)
+          device <- c(device, devicetype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, angdev, device)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$device <- as.factor(LCaov$device)
+  return(LCaov)
+  
+}
+
+deviceMirrorMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+    LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during mirrored trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
