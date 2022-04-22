@@ -2222,8 +2222,8 @@ getWashoutBlockedLearningAOV <- function(groups = c('far', 'mid', 'near'), block
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- getAngularReachDevsCI(data=samples, group=group)
-        samples <- samples[[2]]
+        samples <- getAngularReachDevsStats(data=samples)
+        #samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -2545,7 +2545,7 @@ RAEUntrainedHandANOVA <- function() {
   
 }
 
-#main effect of target and a block by session interaction: look at interaction
+#main effect of block and a block by session interaction: look at interaction
 untrainedHandSessionComparisonMeans <- function(){
   blockdefs <- list('first'=c(46, 3),'second'=c(49,3),'last'=c(64,3))
   LC_aligned <- getAlignedBlockedLearningAOV(blockdefs=blockdefs, hand='untrained')

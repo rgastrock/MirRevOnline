@@ -19,6 +19,7 @@ source('ana/controlmirgen.R')
 getGroupAlignedMirOnline <- function(groups = c('30','60'), set='fa2020'){
   
   for(group in groups){
+    print(group)
     datafilenames <- list.files('data/mirrorreversal-fall/data', pattern = '*.csv')
     
     
@@ -28,7 +29,7 @@ getGroupAlignedMirOnline <- function(groups = c('30','60'), set='fa2020'){
       datafilename <- sprintf('data/mirrorreversal-fall/data/%s', datafilenames[datafilenum]) #change this, depending on location in directory
       
       
-      #cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
+      cat(sprintf('file %d / %d     (%s)\n',datafilenum,length(datafilenames),datafilename))
       adat <- getParticipantCircularAligned(filename = datafilename)
       # per target location, get reachdev for corresponding trials
       
@@ -88,6 +89,7 @@ getGroupAlignedMirOnlineCI <- function(groups = c('30', '60')){
     }
   }
 }
+
 
 plotAlignedMirOnline <- function(groups = c('30', '60'), target='inline') {
   
@@ -592,8 +594,8 @@ getAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- getAngularReachDevsCI(data=samples, group=group)
-        samples <- samples[[2]]
+        samples <- getAngularReachDevsStats(data=samples)
+        #samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -632,58 +634,7 @@ alignedMirOnlineANOVA <- function() {
     print(firstAOV[1:3]) #so that it doesn't print the aov object as well
 }
 
-#target effect, as we see in plot. Block effect, no interaction
-alignedMirOnlineBlockComparisonMeans <- function(){
-  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
-  LC4aov <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs) 
-  
-  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
-  LC4aov$participant <- as.factor(LC4aov$participant)
-  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block"))
-  
-  cellmeans <- emmeans(secondAOV,specs=c('block'))
-  print(cellmeans)
-  
-}
-
-alignedMirOnlineBlockComparisons <- function(method='bonferroni'){
-  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
-  LC4aov <- getAlignedBlockedMirOnlineAOV(blockdefs=blockdefs) 
-  
-  LC4aov <- aggregate(angdev ~ block* participant, data=LC4aov, FUN=mean)
-  LC4aov$participant <- as.factor(LC4aov$participant)
-  secondAOV <- aov_ez("participant","angdev",LC4aov,within=c("block"))
-  
-  #specify contrasts
-  #levels of target are: far, mid, near
-  B1vsB2 <- c(-1,1,0)
-  B1vsB3 <- c(-1,0,1)
-  B2vsB3 <- c(0,-1,1)
-  
-  contrastList <- list('First vs second block'=B1vsB2, 'First vs last block'=B1vsB3, 'Second vs last block'=B2vsB3)
-  
-  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
-  
-  print(comparisons)
-  
-}
-
-#effect size
-alignedMirOnlineBlockComparisonsEffSize <- function(method = 'bonferroni'){
-  comparisons <- alignedMirOnlineBlockComparisons(method=method)
-  #we can use eta-squared as effect size
-  #% of variance in DV(percentcomp) accounted for 
-  #by the difference between target1 and target2
-  comparisonsdf <- as.data.frame(comparisons)
-  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
-  comparisons1 <- cbind(comparisonsdf,etasq)
-  
-  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
-  colnames(effectsize) <- c('contrast', 'etasquared')
-  #print(comparisons)
-  print(effectsize)
-}
-
+#target effect, as we see in plot.no interaction
 
 #Mirror trials
 getMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
@@ -834,8 +785,8 @@ getRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), blockdefs) {
         blockstart <- blockdef[1]
         blockend <- blockstart + blockdef[2] - 1
         samples <- curves[blockstart:blockend,ppno]
-        samples <- getAngularReachDevsCI(data=samples, group=group)
-        samples <- samples[[2]]
+        samples <- getAngularReachDevsStats(data=samples)
+        #samples <- samples[[2]]
         
         target <- c(target, group)
         participant <- c(participant, pp)
@@ -1591,7 +1542,7 @@ RAEBaselinePLMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
 
 #baseline and washout differ between 1st and 2nd block
 
-#Device (Mouse vs. Trackpad): Plots ----
+#Device (Mouse vs. Trackpad): Learning Plots ----
 getDeviceMirOnlineConfInt <- function(groups = c('30','60'), set='fa2020', device){
   for(group in groups){
     data <- getDeviceLC(group=group, set=set, device=device) #this is in qualtricsdata.R
@@ -1766,9 +1717,8 @@ plotDeviceMirOnline <- function(groups = c('30', '60'), devices = c('Mouse','Tra
   
 }
 
-#Device (Mouse vs Trackpad): Statistics ----
+#Device (Mouse vs Trackpad): Learning Statistics ----
 # we care about differences in device for each target location. We can run tests in each target, as seen in plots.
-# To do this, we don't need to convert to % of compensation.
 getDeviceAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
   #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
   # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
@@ -1799,8 +1749,8 @@ getDeviceAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices 
           blockstart <- blockdef[1]
           blockend <- blockstart + blockdef[2] - 1
           samples <- curves[blockstart:blockend,ppno]
-          samples <- getAngularReachDevsCI(data=samples, group=group)
-          samples <- samples[[2]]
+          samples <- getAngularReachDevsStats(data=samples)
+          #samples <- samples[[2]]
           
           target <- c(target, group)
           participant <- c(participant, pp)
@@ -1855,8 +1805,6 @@ deviceAligned60MirOnlineComparisonMeans <- function(group = '60'){
   
 }
 
-#we know from the plot that movement time decreases across blocks, but interesting to see target differences within each block
-
 deviceAligned60MirOnlineComparisons <- function(group='60', method='bonferroni'){
   blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
   LC4aov <- getDeviceAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
@@ -1900,13 +1848,213 @@ deviceAligned60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
 
 #driven by difference between devices in block 1
 
+#Mirror trials - we can transform to percentages again, to make things consistent with others
+getDeviceMirrorMirOnline <- function(group, device){
+  
+  qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  #then get pplist according to device
+  devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+  ppqualt <- devqualt$id
+  dat <- read.csv(file=sprintf('data/mironline-master/data/statistics/%s_PercentCompensation.csv', group), check.names = FALSE)
+  
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
+  
+  #keep only data of pp from this list
+  trial <- dat$trial
+  ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+  dat <- cbind(trial, ndat)
+  
+  return(dat)
+}
+
 getDeviceMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    for(devicetype in devices){
+      curves <- getDeviceMirrorMirOnline(group=group, device=devicetype)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      percentcomp <- c()
+      device <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every three trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          percentcomp <- c(percentcomp, samples)
+          device <- c(device, devicetype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, percentcomp, device)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+  }
+  
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$device <- as.factor(LCaov$device)
+  return(LCaov)
+  
+}
+
+deviceMirrorMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+    LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$percentcomp)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during mirrored trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#there is a block effect for 30 degrees
+deviceMirror30MirOnlineComparisonMeans <- function(group = '30'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+deviceMirror30MirOnlineComparisons <- function(group='30', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1vsB2<- c(-1,1,0)
+  #second
+  B1vsB3 <- c(-1,0,1)
+  #last
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('Block 1 vs. Block 2'=B1vsB2, 'Block 1 vs. Last block'=B1vsB3, 'Block 2 vs. Last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceMirror30MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceMirror30MirOnlineComparisons(group='30', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#first block differs
+
+#there is a block effect for 60 degrees
+deviceMirror60MirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+deviceMirror60MirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1vsB2<- c(-1,1,0)
+  #second
+  B1vsB3 <- c(-1,0,1)
+  #last
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('Block 1 vs. Block 2'=B1vsB2, 'Block 1 vs. Last block'=B1vsB3, 'Block 2 vs. Last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceMirror60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceMirror60MirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#second block differs
+
+#RAE
+getDeviceRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
   #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
   # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
   LCaov <- data.frame()
   for(group in groups){
     for(devicetype in devices){
-      curves <- getDeviceLC(group=group, set='fa2020', device=devicetype)
+      curves <- getDeviceRAE(group=group, set='fa2020', device=devicetype)
       #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
       curves <- curves[,-1] #remove trial rows
       participants <- colnames(curves)
@@ -1930,8 +2078,8 @@ getDeviceMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices =
           blockstart <- blockdef[1]
           blockend <- blockstart + blockdef[2] - 1
           samples <- curves[blockstart:blockend,ppno]
-          samples <- getAngularReachDevsCI(data=samples, group=group)
-          samples <- samples[[2]]
+          samples <- getAngularReachDevsStats(data=samples)
+          #samples <- samples[[2]]
           
           target <- c(target, group)
           participant <- c(participant, pp)
@@ -1954,10 +2102,10 @@ getDeviceMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), devices =
   
 }
 
-deviceMirrorMirOnlineANOVA <- function(groups = c('30','60')) {
+deviceRAEMirOnlineANOVA <- function(groups = c('30','60')) {
   for(group in groups){
-    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
-    LC4aov <- getDeviceMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getDeviceRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
     LC4aov <- LC4aov[which(LC4aov$target == group),]
     #looking into interaction below:
     interaction.plot(LC4aov$device, LC4aov$block, LC4aov$angdev)
@@ -1966,8 +2114,1966 @@ deviceMirrorMirOnlineANOVA <- function(groups = c('30','60')) {
     # for ez, case ID should be a factor:
     LC4aov$participant <- as.factor(LC4aov$participant)
     firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
-    cat(sprintf('Angular reach deviations during mirrored trials across device and blocks, %s degree target: \n', group))
+    cat(sprintf('Angular reach deviations during aligned trials across device and blocks, %s degree target: \n', group))
     print(firstAOV[1:3]) #so that it doesn't print the aov object as well
   }
 }
 
+#no effect for 30 degrees, target effect for 60 degrees (trackpad is lower, as seen in plot), no interactions
+
+#Device (Mouse vs. Trackpad): MT Plots ----
+getDeviceMirOnlineMT <- function(groups = c('30','60'), device){
+  for(group in groups){
+    
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to device
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_MovementTime.csv', group), check.names = FALSE)
+    
+    #dat <- removeOutlierAlignedReaches(group = group, set = set)
+    
+    #keep only data of pp from this list
+    trial <- dat$trial
+    ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+    dat <- cbind(trial, ndat)
+    
+    return(dat)
+  }
+}
+
+getDeviceMirOnlineMTCI <- function(groups = c('30','60'), device, type='t'){
+  for(group in groups){
+    data <- getDeviceMirOnlineMT(group=group, device=device)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    data1 <- as.matrix(data[,2:dim(data)[2]])
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      cireaches <- data1[which(data$trial == trial), ]
+      
+      if(length(unique(cireaches)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        if (type == "t"){
+          cireaches <- cireaches[!is.na(cireaches)]
+          citrial <- t.interval(data = cireaches, variance = var(cireaches), conf.level = 0.95)
+        } else if(type == "b"){
+          citrial <- getBSConfidenceInterval(data = cireaches, resamples = 1000)
+        }
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_MovementTime_CI.csv', group, device), row.names = F) 
+    }
+  }
+}
+
+plotDeviceMirOnlineMT <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig3_%s_DeviceMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-1,11), 
+         xlab = "Trial", ylab = "Movement time (s)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(1), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(0, 1, 2, 4, 6, 8, 10)) #tick marks for y axis
+    
+    for(device in devices){
+      #read in files created
+      groupconfidence <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_MovementTime_CI.csv', group, device))
+      
+      
+      #split up data set for plotting purposes
+      groupconfidenceAligned <- groupconfidence[1:20,]
+      groupconfidenceLC <- groupconfidence[21:110,]
+      groupconfidenceRAE <- groupconfidence[111:130,] 
+      
+      
+      colourscheme <- getDeviceColourScheme(devices = device)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0.5,legend=c('Mouse','Trackpad'),
+           col=c(colourscheme[['Mouse']][['S']],colourscheme[['Trackpad']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+#Device (Mouse vs. Trackpad): MT Stats----
+getDeviceAlignedBlockedMirOnlineMTAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(devicetype in devices){
+      curves <- getDeviceMirOnlineMT(group=group, device=devicetype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      movementtime <- c()
+      device <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          movementtime <- c(movementtime, samples)
+          device <- c(device, devicetype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, movementtime, device)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$device <- as.factor(LCaov$device)
+  return(LCaov)
+  
+}
+
+deviceAlignedMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during aligned trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#block effect for 30 degree target, which is already evident on plot
+#interaction for 60 degree target
+
+deviceAlignedMTMirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','device'))
+  print(cellmeans)
+  
+}
+
+deviceAlignedMTMirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsT_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsT_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsT_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Mouse vs. Trackpad'=M_B1vsT_B1, 'Block 2: Mouse vs. Trackpad'=M_B2vsT_B2, 'Last block: Mouse vs. Trackpad'=M_B3vsT_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','device')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceAlignedMTMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceAlignedMTMirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#mouse differs from trackpad in block 1 for 60 degree target
+
+#Mirror trials
+deviceMirrorMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+    LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during mirror trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#main effects of device and block for 30 degree target (block is obvious, mouse is a bit faster). but no interaction
+#interaction for 60 degree target
+deviceMirrorMTMirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','device'))
+  print(cellmeans)
+  
+}
+
+deviceMirrorMTMirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsT_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsT_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsT_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Mouse vs. Trackpad'=M_B1vsT_B1, 'Block 2: Mouse vs. Trackpad'=M_B2vsT_B2, 'Last block: Mouse vs. Trackpad'=M_B3vsT_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','device')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceMirrorMTMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceMirrorMTMirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#mouse is faster than trackpad for blocks 1 and 2, not sig for last block
+
+#Washout trials
+deviceRAEMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+    LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during washout trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#no effects for 30 degree target
+#interaction for 60 degree target
+deviceRAEMTMirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','device'))
+  print(cellmeans)
+  
+}
+
+deviceRAEMTMirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getDeviceAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("device"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsT_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsT_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsT_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Mouse vs. Trackpad'=M_B1vsT_B1, 'Block 2: Mouse vs. Trackpad'=M_B2vsT_B2, 'Last block: Mouse vs. Trackpad'=M_B3vsT_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','device')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+deviceRAEMTMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- deviceRAEMTMirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#mouse is faster for all blocks
+
+
+#Device (Mouse vs. Trackpad): PL Plots ----
+getDeviceMirOnlinePL <- function(groups = c('30','60'), device){
+  for(group in groups){
+    
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to device
+    devqualt <- qualtdat[which(qualtdat$Q15 == device),]
+    ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_PathLength.csv', group), check.names = FALSE)
+    
+    #dat <- removeOutlierAlignedReaches(group = group, set = set)
+    
+    #keep only data of pp from this list
+    trial <- dat$trial
+    ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+    dat <- cbind(trial, ndat)
+    
+    return(dat)
+  }
+}
+
+getDeviceMirOnlinePLCI <- function(groups = c('30','60'), device, type='t'){
+  for(group in groups){
+    data <- getDeviceMirOnlinePL(group=group, device=device)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    data1 <- as.matrix(data[,2:dim(data)[2]])
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      cireaches <- data1[which(data$trial == trial), ]
+      
+      if(length(unique(cireaches)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        if (type == "t"){
+          cireaches <- cireaches[!is.na(cireaches)]
+          citrial <- t.interval(data = cireaches, variance = var(cireaches), conf.level = 0.95)
+        } else if(type == "b"){
+          citrial <- getBSConfidenceInterval(data = cireaches, resamples = 1000)
+        }
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_PathLength_CI.csv', group, device), row.names = F) 
+    }
+  }
+}
+
+plotDeviceMirOnlinePL <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig4_%s_DevicePL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-3,15), 
+         xlab = "Trial", ylab = "Path Length (monitor scale)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(0), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(0, 2, 4, 6, 8, 10)) #tick marks for y axis
+    
+    for(device in devices){
+      #read in files created
+      groupconfidence <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_PathLength_CI.csv', group, device))
+      
+      
+      #split up data set for plotting purposes
+      groupconfidenceAligned <- groupconfidence[1:20,]
+      groupconfidenceLC <- groupconfidence[21:110,]
+      groupconfidenceRAE <- groupconfidence[111:130,] 
+      
+      
+      colourscheme <- getDeviceColourScheme(devices = device)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[device]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[device]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0.5,legend=c('Mouse','Trackpad'),
+           col=c(colourscheme[['Mouse']][['S']],colourscheme[['Trackpad']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+#Device (Mouse vs. Trackpad): PL Stats----
+getDeviceAlignedBlockedMirOnlinePLAOV <- function(groups = c('30', '60'), devices = c('Mouse','Trackpad'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(devicetype in devices){
+      curves <- getDeviceMirOnlinePL(group=group, device=devicetype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      pathlength <- c()
+      device <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          pathlength <- c(pathlength, samples)
+          device <- c(device, devicetype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, pathlength, device)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$device <- as.factor(LCaov$device)
+  return(LCaov)
+  
+}
+
+deviceAlignedMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getDeviceAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during aligned trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#device effect for 30, mouse has larger path length, but no interaction
+#no effects for 60
+
+#Mirror trials
+deviceMirrorMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+    LC4aov <- getDeviceAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during mirror trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#device and block effect, no interaction for 30 (mouse is larger, blocks go down as seen in plot)
+#block effect, no interaction for 60 (goes down as seen in plot)
+
+#Washout trials
+deviceRAEMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+    LC4aov <- getDeviceAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$device, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(device), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during washout trials across device and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#block effect for 30, no interaction (goes down from first block)
+#main effects for 60, no interaction (goes down from first block, mouse has larger PL)
+
+#Mouse moves faster, but has larger PL (could be that trackpad users stop more along the way?)
+
+
+
+
+#Sex (Male vs. Female): Learning Plots ----
+getSexMirOnlineConfInt <- function(groups = c('30','60'), set='fa2020', sex){
+  for(group in groups){
+    data <- getSexLC(group=group, set=set, sex=sex) #this is in qualtricsdata.R
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_SexLC_CI.csv', group, sex), row.names = F)
+    }
+  }
+}
+
+#use no baseline cleaning data for baseline
+getSexAlignedMirOnline <- function(group, sex){
+  
+  qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  #then get pplist according to sex
+  devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
+  ppqualt <- devqualt$id
+  dat <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv', group), check.names = FALSE)
+  
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
+  
+  #keep only data of pp from this list
+  trial <- dat$trial
+  ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+  dat <- cbind(trial, ndat)
+  
+  return(dat)
+}
+
+getSexAlignedMirOnlineConfInt <- function(groups = c('30','60'), sex){
+  for(group in groups){
+    data <- getSexAlignedMirOnline(group=group, sex=sex)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_SexAligned_CI.csv', group, sex), row.names = F)
+    }
+  }
+}
+
+getSexRAEMirOnlineConfInt <- function(groups = c('30','60'), set='fa2020', sex){
+  for(group in groups){
+    data <- getSexRAE(group=group, set=set, sex=sex) #found in qualtricsdata.R
+    
+    trialno <- data$trial
+    
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      subdat <- as.numeric(data[trial, 2:length(data)]) #get just the values, then make the circular again
+      citrial <- getAngularReachDevsCI(data = subdat, group = group)
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_SexRAE_CI.csv', group, sex), row.names = F)
+    }
+  }
+}
+
+plotSexMirOnline <- function(groups = c('30', '60'), sexes = c('Male','Female'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig5_%s_SexAllTasks.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-20,140), 
+         xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(0, 60, 120), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(-15, 0, 15, 30, 60, 90, 120)) #tick marks for y axis
+    
+    for(sex in sexes){
+      #read in files created by getGroupConfidenceInterval in filehandling.R
+      groupconfidenceAligned <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_SexAligned_CI.csv', group, sex))
+      groupconfidenceLC <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_SexLC_CI.csv', group, sex))
+      groupconfidenceRAE <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_SexRAE_CI.csv', group, sex))
+      
+      
+      
+      colourscheme <- getSexColourScheme(sexes=sex)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0,legend=c('Male','Female'),
+           col=c(colourscheme[['Male']][['S']],colourscheme[['Female']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+
+#Sex (Male vs Female): Learning Statistics ----
+# we care about differences in device for each target location. We can run tests in each target, as seen in plots.
+getSexAlignedBlockedMirOnlineAOV <- function(groups = c('30', '60'), sexes = c('Male','Female'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(sextype in sexes){
+      curves <- getSexAlignedMirOnline(group=group, sex=sextype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      angdev <- c()
+      sex <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- getAngularReachDevsStats(data=samples)
+          #samples <- samples[[2]]
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          angdev <- c(angdev, samples)
+          sex <- c(sex, sextype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, angdev, sex)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$sex <- factor(LCaov$sex, levels = c('Male','Female'))
+  return(LCaov)
+  
+}
+
+sexAlignedMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getSexAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during aligned trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#no effects for 30 degree target
+#interaction for 60 degree target
+sexAligned60MirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getSexAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="angdev",LC4aov,within=c("block"),between=c("sex"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','sex'))
+  print(cellmeans)
+  
+}
+
+sexAligned60MirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+  LC4aov <- getSexAlignedBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="angdev",LC4aov,within=c("block"),between=c("sex"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1_MvsF <- c(-1,0,0,1,0,0)
+  #second
+  B2_MvsF <- c(0,-1,0,0,1,0)
+  #last
+  B3_MvsF <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('1st block: Male vs. Female'=B1_MvsF, '2nd block: Male vs. Female'=B2_MvsF, 'last block: Male vs. Female'=B3_MvsF)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block', 'sex')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexAligned60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexAligned60MirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#males and females differ during second block (males with highers angdev)
+
+#Mirror trials - we can transform to percentages again, to make things consistent with others
+getSexMirrorMirOnline <- function(group, sex){
+  
+  qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+  #then get pplist according to sex
+  devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
+  ppqualt <- devqualt$id
+  dat <- read.csv(file=sprintf('data/mironline-master/data/statistics/%s_PercentCompensation.csv', group), check.names = FALSE)
+  
+  #dat <- removeOutlierAlignedReaches(group = group, set = set)
+  
+  #keep only data of pp from this list
+  trial <- dat$trial
+  ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+  dat <- cbind(trial, ndat)
+  
+  return(dat)
+}
+
+getSexMirrorBlockedMirOnlineAOV <- function(groups = c('30', '60'), sexes = c('Male','Female'), blockdefs) {
+  
+  LCaov <- data.frame()
+  for(group in groups){
+    for(sextype in sexes){
+      curves <- getSexMirrorMirOnline(group=group, sex=sextype)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      percentcomp <- c()
+      sex <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every three trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          percentcomp <- c(percentcomp, samples)
+          sex <- c(sex, sextype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, percentcomp, sex)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+  }
+  
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$sex <- factor(LCaov$sex, levels = c('Male','Female'))
+  return(LCaov)
+  
+}
+
+sexMirrorMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+    LC4aov <- getSexMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$percentcomp)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=percentcomp, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during mirrored trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#there is a block effect for 30 degrees
+sexMirror30MirOnlineComparisonMeans <- function(group = '30'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getSexMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+sexMirror30MirOnlineComparisons <- function(group='30', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getSexMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1vsB2<- c(-1,1,0)
+  #second
+  B1vsB3 <- c(-1,0,1)
+  #last
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('Block 1 vs. Block 2'=B1vsB2, 'Block 1 vs. Last block'=B1vsB3, 'Block 2 vs. Last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexMirror30MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexMirror30MirOnlineComparisons(group='30', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#first block differs
+
+#there is a block effect for 60 degrees
+sexMirror60MirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getSexMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block'))
+  print(cellmeans)
+  
+}
+
+sexMirror60MirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(76,15))
+  LC4aov <- getSexMirrorBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="percentcomp",LC4aov,within=c("block"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  B1vsB2<- c(-1,1,0)
+  #second
+  B1vsB3 <- c(-1,0,1)
+  #last
+  B2vsB3 <- c(0,-1,1)
+  
+  contrastList <- list('Block 1 vs. Block 2'=B1vsB2, 'Block 1 vs. Last block'=B1vsB3, 'Block 2 vs. Last block'=B2vsB3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexMirror60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexMirror60MirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+#block 2 differs
+
+#RAE
+getSexRAEBlockedMirOnlineAOV <- function(groups = c('30', '60'), sexes = c('Male','Female'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(sextype in sexes){
+      curves <- getSexRAE(group=group, set='fa2020', sex=sextype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      angdev <- c()
+      sex <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- getAngularReachDevsStats(data=samples)
+          #samples <- samples[[2]]
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          angdev <- c(angdev, samples)
+          sex <- c(sex, sextype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, angdev, sex)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$sex <- factor(LCaov$sex, levels = c('Male','Female'))
+  return(LCaov)
+  
+}
+
+sexRAEMirOnlineANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getSexRAEBlockedMirOnlineAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$angdev)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=angdev, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Angular reach deviations during aligned trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#no effects for either target
+
+
+
+#Sex (Male vs. Female): MT Plots ----
+getSexMirOnlineMT <- function(groups = c('30','60'), sex){
+  for(group in groups){
+    
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to sex
+    devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
+    ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_MovementTime.csv', group), check.names = FALSE)
+    
+    #dat <- removeOutlierAlignedReaches(group = group, set = set)
+    
+    #keep only data of pp from this list
+    trial <- dat$trial
+    ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+    dat <- cbind(trial, ndat)
+    
+    return(dat)
+  }
+}
+
+getSexMirOnlineMTCI <- function(groups = c('30','60'), sex, type='t'){
+  for(group in groups){
+    data <- getSexMirOnlineMT(group=group, sex=sex)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    data1 <- as.matrix(data[,2:dim(data)[2]])
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      cireaches <- data1[which(data$trial == trial), ]
+      
+      if(length(unique(cireaches)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        if (type == "t"){
+          cireaches <- cireaches[!is.na(cireaches)]
+          citrial <- t.interval(data = cireaches, variance = var(cireaches), conf.level = 0.95)
+        } else if(type == "b"){
+          citrial <- getBSConfidenceInterval(data = cireaches, resamples = 1000)
+        }
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_MovementTime_CI.csv', group, sex), row.names = F) 
+    }
+  }
+}
+
+plotSexMirOnlineMT <- function(groups = c('30', '60'), sexes = c('Male','Female'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig6_%s_SexMT.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-1,11), 
+         xlab = "Trial", ylab = "Movement time (s)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(1), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(0, 1, 2, 4, 6, 8, 10)) #tick marks for y axis
+    
+    for(sex in sexes){
+      #read in files created
+      groupconfidence <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_MovementTime_CI.csv', group, sex))
+      
+      
+      #split up data set for plotting purposes
+      groupconfidenceAligned <- groupconfidence[1:20,]
+      groupconfidenceLC <- groupconfidence[21:110,]
+      groupconfidenceRAE <- groupconfidence[111:130,] 
+      
+      
+      colourscheme <- getSexColourScheme(sexes=sex)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0.5,legend=c('Male','Female'),
+           col=c(colourscheme[['Male']][['S']],colourscheme[['Female']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+#Sex (Male vs. Female): MT Stats----
+getSexAlignedBlockedMirOnlineMTAOV <- function(groups = c('30', '60'), sexes = c('Male','Female'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(sextype in sexes){
+      curves <- getSexMirOnlineMT(group=group, sex=sextype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      movementtime <- c()
+      sex <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          movementtime <- c(movementtime, samples)
+          sex <- c(sex, sextype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, movementtime, sex)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$sex <- factor(LCaov$sex, levels = c('Male','Female'))
+  return(LCaov)
+  
+}
+
+sexAlignedMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during aligned trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#main effects for 30: As seen in plot, males are faster and block goes down
+#same main effects for 60
+
+
+#Mirror trials
+sexMirrorMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+    LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during mirror trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+
+#interaction for 30 degree target
+sexMirrorMTMirOnlineComparisonMeans <- function(group = '30'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','sex'))
+  print(cellmeans)
+  
+}
+
+sexMirrorMTMirOnlineComparisons <- function(group='30', method='bonferroni'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsF_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsF_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsF_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Male vs. Female'=M_B1vsF_B1, 'Block 2: Male vs. Female'=M_B2vsF_B2, 'Last block: Male vs. Female'=M_B3vsF_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','sex')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexMirrorMTMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexMirrorMTMirOnlineComparisons(group='30', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#Males are faster during blocks 1 and last block
+
+#interaction for 60 degree target
+sexMirrorMT60MirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','sex'))
+  print(cellmeans)
+  
+}
+
+sexMirrorMT60MirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsF_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsF_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsF_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Male vs. Female'=M_B1vsF_B1, 'Block 2: Male vs. Female'=M_B2vsF_B2, 'Last block: Male vs. Female'=M_B3vsF_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','sex')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexMirrorMT60MirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexMirrorMT60MirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#Males are faster during all blocks
+
+#Washout trials
+sexRAEMirOnlineMTANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+    LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$movementtime)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=movementtime, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Movement time during washout trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#no effects for 30
+#interaction for 60
+#interaction for 60 degree target
+sexRAEMTMirOnlineComparisonMeans <- function(group = '60'){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  cellmeans <- emmeans(secondAOV,specs=c('block','sex'))
+  print(cellmeans)
+  
+}
+
+sexRAEMTMirOnlineComparisons <- function(group='60', method='bonferroni'){
+  blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+  LC4aov <- getSexAlignedBlockedMirOnlineMTAOV(blockdefs=blockdefs)                      
+  LC4aov <- LC4aov[which(LC4aov$target == group),]
+  
+  LC4aov$participant <- as.factor(LC4aov$participant)
+  secondAOV <- aov_ez("participant",dv="movementtime",LC4aov,within=c("block"),between=c("sex"))
+  
+  #specify contrasts
+  #levels of target are: 30,60
+  #first block
+  M_B1vsF_B1<- c(-1,0,0,1,0,0)
+  #second
+  M_B2vsF_B2 <- c(0,-1,0,0,1,0)
+  #last
+  M_B3vsF_B3 <- c(0,0,-1,0,0,1)
+  
+  contrastList <- list('Block 1: Male vs. Female'=M_B1vsF_B1, 'Block 2: Male vs. Female'=M_B2vsF_B2, 'Last block: Male vs. Female'=M_B3vsF_B3)
+  
+  comparisons<- contrast(emmeans(secondAOV,specs=c('block','sex')), contrastList, adjust=method)
+  
+  print(comparisons)
+  
+}
+
+#effect size
+sexRAEMTMirOnlineComparisonsEffSize <- function(method = 'bonferroni'){
+  comparisons <- sexRAEMTMirOnlineComparisons(group='60', method=method)
+  #we can use eta-squared as effect size
+  #% of variance in DV(percentcomp) accounted for 
+  #by the difference between target1 and target2
+  comparisonsdf <- as.data.frame(comparisons)
+  etasq <- ((comparisonsdf$t.ratio)^2)/(((comparisonsdf$t.ratio)^2)+(comparisonsdf$df))
+  comparisons1 <- cbind(comparisonsdf,etasq)
+  
+  effectsize <- data.frame(comparisons1$contrast, comparisons1$etasq)
+  colnames(effectsize) <- c('contrast', 'etasquared')
+  #print(comparisons)
+  print(effectsize)
+}
+
+#males are faster in all blocks
+
+
+#Sex (Male vs. Female): PL Plots ----
+getSexMirOnlinePL <- function(groups = c('30','60'), sex){
+  for(group in groups){
+    
+    qualtdat <- read.csv('data/mirrorreversal-fall/qualtrics/FA_Qualtrics_ParticipantList.csv', stringsAsFactors = F)
+    #then get pplist according to sex
+    devqualt <- qualtdat[which(qualtdat$Q5 == sex),]
+    ppqualt <- devqualt$id
+    dat <- read.csv(file=sprintf('data/mirrorreversal-fall/data/processed/%s_step2_PathLength.csv', group), check.names = FALSE)
+    
+    #dat <- removeOutlierAlignedReaches(group = group, set = set)
+    
+    #keep only data of pp from this list
+    trial <- dat$trial
+    ndat <- dat[,which(colnames(dat) %in% ppqualt)]
+    dat <- cbind(trial, ndat)
+    
+    return(dat)
+  }
+}
+
+getSexMirOnlinePLCI <- function(groups = c('30','60'), sex, type='t'){
+  for(group in groups){
+    data <- getSexMirOnlinePL(group=group, sex=sex)
+    #current fix for summer data being non-randomized and not counterbalanced
+    trialno <- data$trial
+    data1 <- as.matrix(data[,2:dim(data)[2]])
+    confidence <- data.frame()
+    
+    for(trial in trialno){
+      cireaches <- data1[which(data$trial == trial), ]
+      
+      if(length(unique(cireaches)) == 1){ #deal with trials with no data at all
+        citrial <- as.numeric(c(NA,NA,NA))
+      } else{
+        if (type == "t"){
+          cireaches <- cireaches[!is.na(cireaches)]
+          citrial <- t.interval(data = cireaches, variance = var(cireaches), conf.level = 0.95)
+        } else if(type == "b"){
+          citrial <- getBSConfidenceInterval(data = cireaches, resamples = 1000)
+        }
+      }
+      
+      if (prod(dim(confidence)) == 0){
+        confidence <- citrial
+      } else {
+        confidence <- rbind(confidence, citrial)
+      }
+      write.csv(confidence, file=sprintf('data/mironline-master/data/processed/%s_%s_PathLength_CI.csv', group, sex), row.names = F) 
+    }
+  }
+}
+
+plotSexMirOnlinePL <- function(groups = c('30', '60'), sexes = c('Male','Female'), target='inline', set = 'fa2020') {
+  for (group in groups){
+    #but we can save plot as svg file
+    if (target=='svg'){
+      svglite(file=sprintf('data/mironline-master/doc/fig/Fig7_%s_SexPL.svg', group), width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
+    }
+    
+    # create plot
+    #meanGroupReaches <- list() #empty list so that it plots the means last
+    
+    #NA to create empty plot
+    # could maybe use plot.new() ?
+    plot(NA, NA, xlim = c(0,131), ylim = c(-3,15), 
+         xlab = "Trial", ylab = "Path Length (monitor scale)", frame.plot = FALSE, #frame.plot takes away borders
+         main = sprintf("%s degree target location", group), xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+    abline(h = c(0), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+    abline(v= c(20, 110), col = 8, lty = 2)
+    axis(1, at = c(1, 10, 21, 50, 80, 111, 120, 130)) #tick marks for x axis
+    axis(2, at = c(0, 2, 4, 6, 8, 10)) #tick marks for y axis
+    
+    for(sex in sexes){
+      #read in files created
+      groupconfidence <- read.csv(file=sprintf('data/mironline-master/data/processed/%s_%s_PathLength_CI.csv', group, sex))
+      
+      
+      #split up data set for plotting purposes
+      groupconfidenceAligned <- groupconfidence[1:20,]
+      groupconfidenceLC <- groupconfidence[21:110,]
+      groupconfidenceRAE <- groupconfidence[111:130,] 
+      
+      
+      colourscheme <- getSexColourScheme(sexes = sex)
+      #plot Aligned Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceAligned[,1]
+      upper <- groupconfidenceAligned[,3]
+      mid <- groupconfidenceAligned[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(1:20), rev(c(1:20))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(1:20), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Mirrored Data
+      lower <- groupconfidenceLC[,1]
+      upper <- groupconfidenceLC[,3]
+      mid <- groupconfidenceLC[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(21:110), rev(c(21:110))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(21:110), y = na.omit(mid),col=col,lty=1)
+      
+      #plot Wahout Data
+      #take only first, last and middle columns of file
+      lower <- groupconfidenceRAE[,1]
+      upper <- groupconfidenceRAE[,3]
+      mid <- groupconfidenceRAE[,2]
+      
+      col <- colourscheme[[sex]][['T']] #use colour scheme according to group
+      
+      #upper and lower bounds create a polygon
+      #polygon creates it from low left to low right, then up right to up left -> use rev
+      #x is just trial nnumber, y depends on values of bounds
+      polygon(x = c(c(111:130), rev(c(111:130))), y = c(na.omit(lower), rev(na.omit(upper))), border=NA, col=col)
+      col <- colourscheme[[sex]][['S']]
+      lines(x = c(111:130), y = na.omit(mid),col=col,lty=1)
+    }
+    
+    #add legend
+    legend(80,0.5,legend=c('Male','Female'),
+           col=c(colourscheme[['Male']][['S']],colourscheme[['Female']][['S']]),
+           lty=1,bty='n',cex=1,lwd=2)
+    
+    #close everything if you saved plot as svg
+    if (target=='svg') {
+      dev.off()
+    }
+    
+  }
+  
+  
+  
+}
+
+
+#Sex (Male vs. Female): PL Stats----
+getSexAlignedBlockedMirOnlinePLAOV <- function(groups = c('30', '60'), sexes = c('Male','Female'), blockdefs) {
+  #when analyzing angular deviations, make sure that means used are not distorted. Angles form a circle, so regular mean
+  # will be 0 for example between -175, 175. But our function that uses bootstrapping will reveal a more accurate mean
+  LCaov <- data.frame()
+  for(group in groups){
+    for(sextype in sexes){
+      curves <- getSexMirOnlinePL(group=group, sex=sextype)
+      #curves <- read.csv(sprintf('data/mironline-master/data/processed/%s_%s_CircularAligned.csv',group), stringsAsFactors=FALSE, check.names = FALSE)  
+      curves <- curves[,-1] #remove trial rows
+      participants <- colnames(curves)
+      N <- length(participants)
+      
+      #blocked <- array(NA, dim=c(N,length(blockdefs)))
+      
+      target <- c()
+      participant <- c()
+      block <- c()
+      pathlength <- c()
+      sex <- c()
+      
+      for (ppno in c(1:N)) {
+        
+        pp <- participants[ppno]
+        
+        for (blockno in c(1:length(blockdefs))) {
+          #for each participant, and every 9 trials, get the mean
+          blockdef <- blockdefs[[blockno]]
+          blockstart <- blockdef[1]
+          blockend <- blockstart + blockdef[2] - 1
+          samples <- curves[blockstart:blockend,ppno]
+          samples <- mean(samples, na.rm=TRUE)
+          
+          target <- c(target, group)
+          participant <- c(participant, pp)
+          block <- c(block, names(blockdefs)[blockno])
+          pathlength <- c(pathlength, samples)
+          sex<- c(sex, sextype)
+        }
+      }
+      LCBlocked <- data.frame(target, participant, block, pathlength, sex)
+      LCaov <- rbind(LCaov, LCBlocked)
+    }
+    
+  }
+  #need to make some columns as factors for ANOVA
+  LCaov$target <- as.factor(LCaov$target)
+  LCaov$block <- as.factor(LCaov$block)
+  LCaov$block <- factor(LCaov$block, levels = c('first','second','last'))
+  LCaov$sex <- factor(LCaov$sex, levels = c('Male','Female'))
+  return(LCaov)
+  
+}
+
+sexAlignedMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(1,3),'second'=c(4,3),'last'=c(18,3))
+    LC4aov <- getSexAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during aligned trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#no effects for both 30 and 60
+
+#Mirror trials
+sexMirrorMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(21,3),'second'=c(24,3),'last'=c(96,15))
+    LC4aov <- getSexAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during mirror trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#block effect for both 30 and 60, as seen in plot where PL goes down across blocks
+
+#Washout trials
+sexRAEMirOnlinePLANOVA <- function(groups = c('30','60')) {
+  for(group in groups){
+    blockdefs <- list('first'=c(111,3),'second'=c(114,3),'last'=c(128,3))
+    LC4aov <- getSexAlignedBlockedMirOnlinePLAOV(blockdefs=blockdefs)                      
+    LC4aov <- LC4aov[which(LC4aov$target == group),]
+    #looking into interaction below:
+    interaction.plot(LC4aov$sex, LC4aov$block, LC4aov$pathlength)
+    
+    #learning curve ANOVA's
+    # for ez, case ID should be a factor:
+    LC4aov$participant <- as.factor(LC4aov$participant)
+    firstAOV <- ezANOVA(data=LC4aov, wid=participant, dv=pathlength, within= c(block), between= c(sex), type=3, return_aov = TRUE) #df is k-2 or 3 levels minus 2; N-1*k-1 for denom, total will be (N-1)(k1 -1)(k2 - 1)
+    cat(sprintf('Path length during washout trials across sex and blocks, %s degree target: \n', group))
+    print(firstAOV[1:3]) #so that it doesn't print the aov object as well
+  }
+}
+#block effect for both 30 and 60, goes down from first block
+
+#Males moves faster, but no difference in PL
