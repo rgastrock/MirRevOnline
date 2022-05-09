@@ -1026,8 +1026,13 @@ plotAllTasksCtrl <- function(groups = c('far', 'mid', 'near'), target='inline') 
   plot(NA, NA, xlim = c(0,178), ylim = c(-65,225), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
        main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
-  abline(h = c(0, 10, 90, 170), v = c(45, 66, 156), col = 8, lty = 2)
-  axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  #abline(h = c(0, 10, 90, 170), v = c(45, 66, 156), col = 8, lty = 2)
+  #axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  abline(h = c(0, 10, 90, 170), col = 8, lty = 2)
+  axis(side=1, at=c(1,45), labels=c('1',''))
+  axis(side=1, at=c(46,66), labels=c('46',''))
+  axis(side=1, at=c(67,156), labels=c('67',''))
+  axis(side=1, at=c(157,177), labels=c('157','177'))
   axis(2, at = c(-50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
   
   
@@ -1272,7 +1277,7 @@ getBlockedMirCtrlPercentage <- function(group, blockdefs) {
 plotBlockedMirCtrl <- function(target='inline', groups = c('far', 'mid', 'near')) {
   
   if (target == 'svg') {
-    svglite(file='data/controlmironline-master/doc/fig/Fig1F_BlockedLearningCtrl.svg', width=14, height=9, pointsize=14, system_fonts=list(sans='Arial'))
+    svglite(file='data/controlmironline-master/doc/fig/Fig1F_BlockedLearningCtrl.svg', width=14, height=9, pointsize=18, system_fonts=list(sans='Arial'))
   }
   
   #par(mfrow=c(1,2), mar=c(4,4,2,0.1))
@@ -1766,8 +1771,13 @@ plotCtrlMT <- function(groups = c('far', 'mid', 'near'), target='inline') {
        xlab = "Trial", ylab = "Movement time (s)", frame.plot = FALSE, #frame.plot takes away borders
        main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   
-  abline(h = c(0, 1), v = c(45, 66, 156), col = 8, lty = 2)
-  axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  #abline(h = c(0, 1), v = c(45, 66, 156), col = 8, lty = 2)
+  #axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  abline(h = c(0, 1), col = 8, lty = 2)
+  axis(side=1, at=c(1,45), labels=c('1',''))
+  axis(side=1, at=c(46,66), labels=c('46',''))
+  axis(side=1, at=c(67,156), labels=c('67',''))
+  axis(side=1, at=c(157,177), labels=c('157','177'))
   axis(2, at = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), las = 2) #tick marks for y axis
   
   for(group in groups){
@@ -2044,8 +2054,13 @@ plotCtrlPL <- function(groups = c('far', 'mid', 'near'), target='inline') {
        xlab = "Trial", ylab = "Path Length (monitor scale)", frame.plot = FALSE, #frame.plot takes away borders
        main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   
-  abline(h = c(0, 0.4), v = c(45, 66, 156), col = 8, lty = 2)
-  axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  #abline(h = c(0, 0.4), v = c(45, 66, 156), col = 8, lty = 2)
+  #axis(1, at = c(1, 25, 46, 55, 67, 95, 125, 157, 165, 177)) #tick marks for x axis
+  abline(h = c(0, 0.4), col = 8, lty = 2)
+  axis(side=1, at=c(1,45), labels=c('1',''))
+  axis(side=1, at=c(46,66), labels=c('46',''))
+  axis(side=1, at=c(67,156), labels=c('67',''))
+  axis(side=1, at=c(157,177), labels=c('157','177'))
   axis(2, at = c(0, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4), las = 2) #tick marks for y axis
   
   for(group in groups){

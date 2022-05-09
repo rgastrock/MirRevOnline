@@ -448,7 +448,7 @@ getBlockedPercentages<- function(group, blockdefs) {
 plotBlockedMirOnline <- function(target='inline', groups = c('30', '60')) {
   
   if (target == 'svg') {
-    svglite(file='data/mironline-master/doc/fig/Fig1D_BlockedMirOnline.svg', width=14, height=9, pointsize=14, system_fonts=list(sans='Arial'))
+    svglite(file='data/mironline-master/doc/fig/Fig1D_BlockedMirOnline.svg', width=14, height=9, pointsize=18, system_fonts=list(sans='Arial'))
   }
   
   #par(mfrow=c(1,2), mar=c(4,4,2,0.1))

@@ -469,7 +469,7 @@ plotBlockedLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='
   
   
   if (target=='svg') {
-    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1D_BlockedLearningCtrlGen.svg', width=14, height=8.5, pointsize=13, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1D_BlockedLearningCtrlGen.svg', width=14, height=8.5, pointsize=18, system_fonts=list(sans="Arial"))
   }
   
   
@@ -593,7 +593,7 @@ plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline'
   
   
   if (target=='svg') {
-    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1_LearningCtrlGen.svg', width=14, height=8.5, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig1_LearningCtrlGen.svg', width=14, height=8.5, pointsize=18, system_fonts=list(sans="Arial"))
   }
   
   
@@ -605,11 +605,11 @@ plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline'
   # could maybe use plot.new() ?
   plot(NA, NA, xlim = c(0,127), ylim = c(-70,265), 
        xlab = "Trial", ylab = "Angular reach deviation (°)", frame.plot = FALSE, #frame.plot takes away borders
-       main = "Reaches across trials", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
+       main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   
   lim <- par('usr')
   rect(85, lim[3]-1, 126, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
-  abline(h = c(0), v = c(21, 42, 63, 84, 105), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
+  #abline(h = c(0), v = c(21, 42, 63, 84, 105), col = 8, lty = 2) #creates horizontal dashed lines through y =  0 and 30
   
   #we could color code the dashed lines at perfect compensation, but washout needs to be grey
   perfnear <- rep(10, 105) #add 5 points to either side to extend the line
@@ -635,9 +635,16 @@ plotLearningCtrlGen<- function(groups = c('far', 'mid', 'near'), target='inline'
   greyfar <- rep(170, 27) 
   lines(x = c(105:131), y = greyfar, col = 8, lty = 2) 
   
-  axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
+  #axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
+  abline(h = c(0), col = 8, lty = 2)
+  axis(side=1, at=c(1,21), labels=c('1',''))
+  axis(side=1, at=c(22,42), labels=c('22',''))
+  axis(side=1, at=c(43,63), labels=c('43',''))
+  axis(side=1, at=c(64,84), labels=c('64',''))
+  axis(side=1, at=c(85,105), labels=c('85',''))
+  axis(side=1, at=c(106,126), labels=c('106','126'))
   axis(2, at = c(-50, -10, 0, 10, 50, 90, 130, 170), las = 2) #tick marks for y axis
-  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Quad 1', 'Quad 4', 'Quad 2', 'Quad 1', 'Quad 1 switch', 'Quad 1 washout'), line = -2, tick = FALSE) #tick marks for x axis
+  #axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Quad 1', 'Quad 4', 'Quad 2', 'Quad 1', 'Quad 1 switch', 'Quad 1 washout'), line = -2, tick = FALSE) #tick marks for x axis
   
   
   for(group in groups){
@@ -1365,19 +1372,26 @@ plotCtrlGenMT <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   #but we can save plot as svg file
   if (target=='svg'){
-    svglite(file='data/controlmirgenonline-master/doc/fig/Fig2_MovementTime.svg', width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig2_MovementTime.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
-  plot(NA, NA, xlim = c(0,127), ylim = c(0, 7), 
+  plot(NA, NA, xlim = c(0,127), ylim = c(-0.2, 11), 
        xlab = "Trial", ylab = "Movement time (s)", frame.plot = FALSE, #frame.plot takes away borders
        main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   
   lim <- par('usr')
   rect(85, lim[3]-1, 126, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
-  abline(h = c(0, 1), v = c(21, 42, 63, 84, 105), col = 8, lty = 2)
-  axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
-  axis(2, at = c(0, 1, 2, 3, 4, 5, 6, 7), las = 2) #tick marks for y axis
-  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
+  #abline(h = c(0, 1), v = c(21, 42, 63, 84, 105), col = 8, lty = 2)
+  abline(h = c(0, 1), col = 8, lty = 2)
+  #axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
+  axis(side=1, at=c(1,21), labels=c('1',''))
+  axis(side=1, at=c(22,42), labels=c('22',''))
+  axis(side=1, at=c(43,63), labels=c('43',''))
+  axis(side=1, at=c(64,84), labels=c('64',''))
+  axis(side=1, at=c(85,105), labels=c('85',''))
+  axis(side=1, at=c(106,126), labels=c('106','126'))
+  axis(2, at = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), las = 2) #tick marks for y axis
+  #axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
   
   for(group in groups){
     groupconfidence <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_MovementTime_CI.csv', group))
@@ -1595,19 +1609,26 @@ plotCtrlGenPL <- function(groups = c('far', 'mid', 'near'), target='inline') {
   
   #but we can save plot as svg file
   if (target=='svg'){
-    svglite(file='data/controlmirgenonline-master/doc/fig/Fig3_PathLength.svg', width=14, height=8, pointsize=14, system_fonts=list(sans="Arial"))
+    svglite(file='data/controlmirgenonline-master/doc/fig/Fig3_PathLength.svg', width=10, height=7, pointsize=14, system_fonts=list(sans="Arial"))
   }
   
-  plot(NA, NA, xlim = c(0,127), ylim = c(-0.2, 2), 
+  plot(NA, NA, xlim = c(0,127), ylim = c(-0.2,4), 
        xlab = "Trial", ylab = "Path length (monitor scale)", frame.plot = FALSE, #frame.plot takes away borders
        main = "", xaxt = 'n', yaxt = 'n') #xaxt and yaxt to allow to specify tick marks
   
   lim <- par('usr')
   rect(85, lim[3]-1, 126, lim[4]+1, border = "#ededed", col = "#ededed") #xleft, ybottom, x right, ytop; light grey hex code
-  abline(h = c(0, 0.4), v = c(21, 42, 63, 84, 105), col = 8, lty = 2)
-  axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
-  axis(2, at = c(0, .5, 1, 1.5, 2), las = 2) #tick marks for y axis
-  axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
+  #abline(h = c(0, 0.4), v = c(21, 42, 63, 84, 105), col = 8, lty = 2)
+  abline(h = c(0, 0.4), col = 8, lty = 2)
+  #axis(1, at = c(1, 22, 43, 64, 85, 106, 126)) #tick marks for x axis
+  axis(side=1, at=c(1,21), labels=c('1',''))
+  axis(side=1, at=c(22,42), labels=c('22',''))
+  axis(side=1, at=c(43,63), labels=c('43',''))
+  axis(side=1, at=c(64,84), labels=c('64',''))
+  axis(side=1, at=c(85,105), labels=c('85',''))
+  axis(side=1, at=c(106,126), labels=c('106','126'))
+  axis(2, at = c(0, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4), las = 2) #tick marks for y axis
+  #axis(3, at = c(10, 32, 53, 74, 95, 116), labels = c('Q1', 'Q4', 'Q2', 'Q1', 'Q1', 'Q1'), line = -2, tick = FALSE) #tick marks for x axis
   
   for(group in groups){
     groupconfidence <- read.csv(file=sprintf('data/controlmirgenonline-master/data/processed/%s_PathLength_CI.csv', group))
